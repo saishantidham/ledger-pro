@@ -1,5 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    // Only execute if we are on a page with the receipt form
+document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('receipt-form');
     if (!form) return;
 
@@ -25,9 +24,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let flatsData = [];
 
     // ==========================================
-    // 1. INITIALIZATION & DATA LOADING
+    // 1. DELAYED DATA FETCHING (Fixes 401 Error)
     // ==========================================
-    async function initForm() {
+    window.initFormEngine = async function() {
+        // Prevent fetching twice if we go back and forth
+        if (flatsData.length > 0) return; 
+        
+        DOM.flatSelect.innerHTML = '<option value="" disabled selected>Loading flats...</option>';
         flatsData = await DB.fetchFlats();
         
         DOM.flatSelect.innerHTML = '<option value="" disabled selected>Select a flat...</option>';
@@ -37,9 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             opt.textContent = `${flat.flat_no} - ${flat.owner_name} ${flat.is_rented ? '(R)' : ''}`;
             DOM.flatSelect.appendChild(opt);
         });
-    }
-    
-    initForm();
+    };
 
     // ==========================================
     // 2. TOGGLE: LIVE VS HISTORICAL MODE
@@ -49,14 +50,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isHistorical) {
             DOM.receiptNo.disabled = false;
             DOM.receiptNo.placeholder = "Enter past receipt no.";
-            DOM.receiptDate.disabled = false; // Allow custom dates for past entries
+            DOM.receiptDate.disabled = false; 
             DOM.receiptNo.focus();
         } else {
             DOM.receiptNo.disabled = true;
             DOM.receiptNo.value = "";
-            DOM.receiptNo.placeholder = "Auto-generated (Live Mode)";
+            DOM.receiptNo.placeholder = "Auto-generated (Live)";
             
-            // Revert date to the active session date handled by auth.js
             const sessionDate = document.getElementById('session-date-picker').value;
             DOM.receiptDate.value = sessionDate;
             DOM.receiptDate.disabled = true;
@@ -73,8 +73,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             DOM.ownerPhone.value = selectedFlat.phone_number || '';
             DOM.usualFeeHidden.value = selectedFlat.usual_fee;
             DOM.usualFeeDisplay.textContent = selectedFlat.usual_fee;
-            
-            // Trigger recalculation in case dates were already picked
             calculateMonthsAndFees();
         }
     });
@@ -94,18 +92,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         let months = (d2.getFullYear() - d1.getFullYear()) * 12;
         months -= d1.getMonth();
         months += d2.getMonth();
-        months += 1; // Inclusive of both start and end month
+        months += 1; 
 
         if (months > 0) {
             DOM.monthsCalculated.textContent = `${months} Month${months > 1 ? 's' : ''}`;
             DOM.monthsCalculated.style.color = 'var(--color-success)';
             
-            // Auto-fill expected amount based on master data
             const baseFee = parseFloat(DOM.usualFeeHidden.value);
             if (!isNaN(baseFee)) {
-                const totalExpected = months * baseFee;
-                // Defaulting auto-fill to online amount for modern tracking
-                DOM.onlineAmount.value = totalExpected;
+                DOM.onlineAmount.value = months * baseFee;
                 DOM.cashAmount.value = 0;
                 calculateTotal();
             }
@@ -118,42 +113,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function calculateTotal() {
         const cash = parseFloat(DOM.cashAmount.value) || 0;
         const online = parseFloat(DOM.onlineAmount.value) || 0;
-        const total = cash + online;
-        DOM.totalAmountDisplay.textContent = `₹${total}`;
+        DOM.totalAmountDisplay.textContent = `₹${cash + online}`;
     }
 
     DOM.monthFrom.addEventListener('change', calculateMonthsAndFees);
     DOM.monthTo.addEventListener('change', calculateMonthsAndFees);
     DOM.cashAmount.addEventListener('input', calculateTotal);
     DOM.onlineAmount.addEventListener('input', calculateTotal);
-
-    // ==========================================
-    // 5. FORM SUBMISSION (Preparation for Step 5 Modal)
-    // ==========================================
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        if (!DOM.flatSelect.value) {
-            alert("Please select a flat.");
-            return;
-        }
-
-        // We will wire up the actual DB insertion and trigger the Success Modal here in Step 5.
-        // For now, we log the ready payload.
-        console.log("Ready to insert:", {
-            flat_no: DOM.flatSelect.value,
-            receipt_no: DOM.modeToggle.checked ? DOM.receiptNo.value : null, // null triggers DB auto-sequence
-            date: DOM.receiptDate.value,
-            months_covered: `${DOM.monthFrom.value} to ${DOM.monthTo.value}`,
-            cash_amount: parseFloat(DOM.cashAmount.value) || 0,
-            online_amount: parseFloat(DOM.onlineAmount.value) || 0,
-            remarks: DOM.remarks.value
-        });
-        
-        DOM.submitBtn.textContent = "Processing...";
-        setTimeout(() => {
-            DOM.submitBtn.textContent = "Log Receipt";
-            alert("Form Engine is wired successfully. Ready for Step 5 (Success Modal Integration).");
-        }, 500);
-    });
 });
