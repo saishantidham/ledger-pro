@@ -1,125 +1,159 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Only run if we are on the dashboard
-    if (!document.getElementById('receipt-form')) return;
+    // Only execute if we are on a page with the receipt form
+    const form = document.getElementById('receipt-form');
+    if (!form) return;
 
     const DOM = {
         modeToggle: document.getElementById('mode-toggle'),
         receiptNo: document.getElementById('receipt-no'),
-        date: document.getElementById('receipt-date'),
+        receiptDate: document.getElementById('receipt-date'),
         flatSelect: document.getElementById('flat-select'),
-        editFlatBtn: document.getElementById('edit-flat-btn'),
         ownerName: document.getElementById('owner-name'),
         ownerPhone: document.getElementById('owner-phone'),
-        usualFee: document.getElementById('usual-fee'),
-        isRented: document.getElementById('is-rented'),
         monthFrom: document.getElementById('month-from'),
         monthTo: document.getElementById('month-to'),
-        monthsCalcText: document.getElementById('months-calculated'),
-        cashAmt: document.getElementById('cash-amount'),
-        onlineAmt: document.getElementById('online-amount'),
-        totalDisplay: document.getElementById('total-amount-display')
+        monthsCalculated: document.getElementById('months-calculated'),
+        usualFeeDisplay: document.getElementById('usual-fee-display'),
+        usualFeeHidden: document.getElementById('usual-fee'),
+        cashAmount: document.getElementById('cash-amount'),
+        onlineAmount: document.getElementById('online-amount'),
+        totalAmountDisplay: document.getElementById('total-amount-display'),
+        remarks: document.getElementById('remarks'),
+        submitBtn: document.getElementById('submit-receipt-btn')
     };
 
     let flatsData = [];
-    let isEditingMaster = false;
 
-    // Set Default Date to Today
-    DOM.date.valueAsDate = new Date();
+    // ==========================================
+    // 1. INITIALIZATION & DATA LOADING
+    // ==========================================
+    async function initForm() {
+        flatsData = await DB.fetchFlats();
+        
+        DOM.flatSelect.innerHTML = '<option value="" disabled selected>Select a flat...</option>';
+        flatsData.forEach(flat => {
+            const opt = document.createElement('option');
+            opt.value = flat.flat_no;
+            opt.textContent = `${flat.flat_no} - ${flat.owner_name} ${flat.is_rented ? '(R)' : ''}`;
+            DOM.flatSelect.appendChild(opt);
+        });
+    }
+    
+    initForm();
 
-    // 1. Dual Mode Toggle Logic
+    // ==========================================
+    // 2. TOGGLE: LIVE VS HISTORICAL MODE
+    // ==========================================
     DOM.modeToggle.addEventListener('change', (e) => {
         const isHistorical = e.target.checked;
         if (isHistorical) {
             DOM.receiptNo.disabled = false;
-            DOM.receiptNo.placeholder = "Enter old receipt no.";
+            DOM.receiptNo.placeholder = "Enter past receipt no.";
+            DOM.receiptDate.disabled = false; // Allow custom dates for past entries
             DOM.receiptNo.focus();
         } else {
             DOM.receiptNo.disabled = true;
             DOM.receiptNo.value = "";
-            DOM.receiptNo.placeholder = "Auto-generated";
+            DOM.receiptNo.placeholder = "Auto-generated (Live Mode)";
+            
+            // Revert date to the active session date handled by auth.js
+            const sessionDate = document.getElementById('session-date-picker').value;
+            DOM.receiptDate.value = sessionDate;
+            DOM.receiptDate.disabled = true;
         }
     });
 
-    // 2. Load and Handle Flats
-    flatsData = await DB.fetchFlats();
-    DOM.flatSelect.innerHTML = '<option value="" disabled selected>Select a flat...</option>';
-    flatsData.forEach(flat => {
-        const opt = document.createElement('option');
-        opt.value = flat.flat_no;
-        opt.textContent = `${flat.flat_no} - ${flat.owner_name}`;
-        DOM.flatSelect.appendChild(opt);
-    });
-
+    // ==========================================
+    // 3. SMART FLAT SELECTOR
+    // ==========================================
     DOM.flatSelect.addEventListener('change', (e) => {
         const selectedFlat = flatsData.find(f => f.flat_no === e.target.value);
         if (selectedFlat) {
             DOM.ownerName.value = selectedFlat.owner_name;
             DOM.ownerPhone.value = selectedFlat.phone_number || '';
-            DOM.usualFee.value = selectedFlat.usual_fee;
-            DOM.isRented.checked = selectedFlat.is_rented;
+            DOM.usualFeeHidden.value = selectedFlat.usual_fee;
+            DOM.usualFeeDisplay.textContent = selectedFlat.usual_fee;
             
-            // Lock fields when changing flats
-            setMasterFieldsState(true);
-            isEditingMaster = false;
+            // Trigger recalculation in case dates were already picked
+            calculateMonthsAndFees();
         }
     });
 
-    // 3. Edit Master Data Toggle
-    DOM.editFlatBtn.addEventListener('click', () => {
-        if (!DOM.flatSelect.value) return; // No flat selected
-        isEditingMaster = !isEditingMaster;
-        setMasterFieldsState(!isEditingMaster);
-        if (isEditingMaster) DOM.ownerName.focus();
-    });
+    // ==========================================
+    // 4. MULTI-MONTH CALCULATOR & MATH
+    // ==========================================
+    function calculateMonthsAndFees() {
+        const fromVal = DOM.monthFrom.value;
+        const toVal = DOM.monthTo.value;
 
-    function setMasterFieldsState(disabled) {
-        DOM.ownerName.disabled = disabled;
-        DOM.ownerPhone.disabled = disabled;
-        DOM.usualFee.disabled = disabled;
-        DOM.isRented.disabled = disabled;
-        DOM.editFlatBtn.style.color = disabled ? 'var(--color-text-main)' : 'var(--color-saffron)';
-    }
-
-    // 4. Multi-Month Calculator Logic
-    function calculateMonths() {
-        if (!DOM.monthFrom.value || !DOM.monthTo.value) return;
+        if (!fromVal || !toVal) return;
         
-        const d1 = new Date(DOM.monthFrom.value + '-01');
-        const d2 = new Date(DOM.monthTo.value + '-01');
+        const d1 = new Date(fromVal + '-01');
+        const d2 = new Date(toVal + '-01');
         
         let months = (d2.getFullYear() - d1.getFullYear()) * 12;
         months -= d1.getMonth();
         months += d2.getMonth();
-        months += 1; // Inclusive
+        months += 1; // Inclusive of both start and end month
 
         if (months > 0) {
-            DOM.monthsCalcText.textContent = `Total: ${months} Month${months > 1 ? 's' : ''}`;
-            DOM.monthsCalcText.style.color = 'var(--color-success)';
+            DOM.monthsCalculated.textContent = `${months} Month${months > 1 ? 's' : ''}`;
+            DOM.monthsCalculated.style.color = 'var(--color-success)';
             
-            // Auto-calculate expected fee if master data exists
-            if (DOM.usualFee.value) {
-                const expected = months * parseFloat(DOM.usualFee.value);
-                // Defaulting to online payment for convenience
-                DOM.onlineAmt.value = expected;
-                DOM.cashAmt.value = 0;
+            // Auto-fill expected amount based on master data
+            const baseFee = parseFloat(DOM.usualFeeHidden.value);
+            if (!isNaN(baseFee)) {
+                const totalExpected = months * baseFee;
+                // Defaulting auto-fill to online amount for modern tracking
+                DOM.onlineAmount.value = totalExpected;
+                DOM.cashAmount.value = 0;
                 calculateTotal();
             }
         } else {
-            DOM.monthsCalcText.textContent = "Invalid date range";
-            DOM.monthsCalcText.style.color = 'var(--color-error)';
+            DOM.monthsCalculated.textContent = "Invalid Range";
+            DOM.monthsCalculated.style.color = 'var(--color-error)';
         }
     }
 
-    DOM.monthFrom.addEventListener('change', calculateMonths);
-    DOM.monthTo.addEventListener('change', calculateMonths);
-
-    // 5. Financial Math
     function calculateTotal() {
-        const cash = parseFloat(DOM.cashAmt.value) || 0;
-        const online = parseFloat(DOM.onlineAmt.value) || 0;
-        DOM.totalDisplay.textContent = `₹${cash + online}`;
+        const cash = parseFloat(DOM.cashAmount.value) || 0;
+        const online = parseFloat(DOM.onlineAmount.value) || 0;
+        const total = cash + online;
+        DOM.totalAmountDisplay.textContent = `₹${total}`;
     }
 
-    DOM.cashAmt.addEventListener('input', calculateTotal);
-    DOM.onlineAmt.addEventListener('input', calculateTotal);
+    DOM.monthFrom.addEventListener('change', calculateMonthsAndFees);
+    DOM.monthTo.addEventListener('change', calculateMonthsAndFees);
+    DOM.cashAmount.addEventListener('input', calculateTotal);
+    DOM.onlineAmount.addEventListener('input', calculateTotal);
+
+    // ==========================================
+    // 5. FORM SUBMISSION (Preparation for Step 5 Modal)
+    // ==========================================
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (!DOM.flatSelect.value) {
+            alert("Please select a flat.");
+            return;
+        }
+
+        // We will wire up the actual DB insertion and trigger the Success Modal here in Step 5.
+        // For now, we log the ready payload.
+        console.log("Ready to insert:", {
+            flat_no: DOM.flatSelect.value,
+            receipt_no: DOM.modeToggle.checked ? DOM.receiptNo.value : null, // null triggers DB auto-sequence
+            date: DOM.receiptDate.value,
+            months_covered: `${DOM.monthFrom.value} to ${DOM.monthTo.value}`,
+            cash_amount: parseFloat(DOM.cashAmount.value) || 0,
+            online_amount: parseFloat(DOM.onlineAmount.value) || 0,
+            remarks: DOM.remarks.value
+        });
+        
+        DOM.submitBtn.textContent = "Processing...";
+        setTimeout(() => {
+            DOM.submitBtn.textContent = "Log Receipt";
+            alert("Form Engine is wired successfully. Ready for Step 5 (Success Modal Integration).");
+        }, 500);
+    });
 });
