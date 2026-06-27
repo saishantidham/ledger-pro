@@ -2,14 +2,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const authView = document.getElementById('auth-view');
     const dashboardView = document.getElementById('dashboard-view');
     const loginForm = document.getElementById('login-form');
-    const logoutBtn = document.getElementById('logout-btn');
     const errorText = document.getElementById('auth-error');
 
-    // Check for existing session on load
+    // Settings Drawer Elements
+    const settingsBtn = document.getElementById('settings-toggle-btn');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    const settingsSheet = document.getElementById('settings-sheet');
+    const logoutBtn = document.getElementById('logout-btn');
+
     checkUser();
 
     async function checkUser() {
-        // Updated to use supabaseClient
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
             showDashboard();
@@ -26,21 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btn.textContent = 'Authenticating...';
         errorText.classList.add('hidden');
-        errorText.textContent = ''; // Reset error text
 
-        // Updated to use supabaseClient
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email,
-            password
-        });
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
         if (error) {
-            // Catch invalid login and display custom message
-            if (error.message.includes('Invalid login credentials')) {
-                errorText.textContent = 'Invalid credentials. Please check your email and password.';
-            } else {
-                errorText.textContent = error.message;
-            }
+            errorText.textContent = error.message.includes('Invalid') ? 'Invalid credentials.' : error.message;
             errorText.classList.remove('hidden');
             btn.textContent = 'Authenticate';
         } else {
@@ -49,12 +42,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Settings Drawer Logic
+    settingsBtn.addEventListener('click', () => {
+        settingsSheet.classList.remove('hidden');
+        // Small delay to allow display:block to apply before animating opacity
+        setTimeout(() => settingsSheet.classList.add('visible'), 10);
+    });
+
+    closeSettingsBtn.addEventListener('click', closeSettings);
+    
+    // Close if clicking on the blurred background overlay
+    settingsSheet.addEventListener('click', (e) => {
+        if (e.target === settingsSheet) closeSettings();
+    });
+
+    function closeSettings() {
+        settingsSheet.classList.remove('visible');
+        setTimeout(() => settingsSheet.classList.add('hidden'), 300); // Wait for animation
+    }
+
     logoutBtn.addEventListener('click', async () => {
-        // Updated to use supabaseClient
         const { error } = await supabaseClient.auth.signOut();
         if (!error) {
             document.getElementById('email').value = '';
             document.getElementById('password').value = '';
+            closeSettings();
             showAuth();
         }
     });
@@ -64,6 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
         authView.classList.add('hidden-view');
         dashboardView.classList.remove('hidden-view');
         dashboardView.classList.add('active-view');
+        
+        setDynamicGreeting();
         setFinancialYear();
     }
 
@@ -74,20 +88,28 @@ document.addEventListener('DOMContentLoaded', () => {
         authView.classList.add('active-view');
     }
 
+    function setDynamicGreeting() {
+        const hour = new Date().getHours();
+        let greeting = 'Good Evening';
+        if (hour >= 5 && hour < 12) greeting = 'Good Morning';
+        else if (hour >= 12 && hour < 17) greeting = 'Good Afternoon';
+        
+        document.getElementById('greeting-text').textContent = `${greeting},`;
+    }
+
     function setFinancialYear() {
         const today = new Date();
         const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth(); // 0-indexed (0 = Jan, 3 = April)
+        const currentMonth = today.getMonth(); 
         
         let startYear, endYear;
-        if (currentMonth >= 3) { // April or later
+        if (currentMonth >= 3) { 
             startYear = currentYear;
             endYear = currentYear + 1;
-        } else { // Jan, Feb, March
+        } else { 
             startYear = currentYear - 1;
             endYear = currentYear;
         }
-        
         document.getElementById('financial-year').textContent = `FY ${startYear.toString().slice(-2)}-${endYear.toString().slice(-2)}`;
     }
 });
