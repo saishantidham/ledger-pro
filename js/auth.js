@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     checkUser();
 
     async function checkUser() {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Updated to use supabaseClient
+        const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
             showDashboard();
         } else {
@@ -25,14 +26,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btn.textContent = 'Authenticating...';
         errorText.classList.add('hidden');
+        errorText.textContent = ''; // Reset error text
 
-        const { data, error } = await supabase.auth.signInWithPassword({
+        // Updated to use supabaseClient
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
             email,
             password
         });
 
         if (error) {
-            errorText.textContent = error.message;
+            // Catch invalid login and display custom message
+            if (error.message.includes('Invalid login credentials')) {
+                errorText.textContent = 'Invalid credentials. Please check your email and password.';
+            } else {
+                errorText.textContent = error.message;
+            }
             errorText.classList.remove('hidden');
             btn.textContent = 'Authenticate';
         } else {
@@ -42,7 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     logoutBtn.addEventListener('click', async () => {
-        const { error } = await supabase.auth.signOut();
+        // Updated to use supabaseClient
+        const { error } = await supabaseClient.auth.signOut();
         if (!error) {
             document.getElementById('email').value = '';
             document.getElementById('password').value = '';
