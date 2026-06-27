@@ -60,11 +60,109 @@
         </section>
 
         <section id="form-engine-container" class="form-engine">
-            <p class="text-muted" style="text-align: center; padding: 2rem;">[ Form Engine will render here ]</p>
+            <form id="receipt-form" class="ledger-form">
+                
+                <div class="mode-toggle-container">
+                    <span class="toggle-label">Live Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="mode-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-label text-muted" id="historical-label">Historical</span>
+                </div>
+
+                <div class="form-row two-col">
+                    <div class="input-group">
+                        <label>Receipt No.</label>
+                        <input type="text" id="receipt-no" placeholder="Auto-generated" disabled>
+                    </div>
+                    <div class="input-group">
+                        <label>Date</label>
+                        <input type="date" id="receipt-date" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Select Flat</label>
+                    <select id="flat-select" required>
+                        <option value="" disabled selected>Loading flats...</option>
+                    </select>
+                </div>
+
+                <div class="owner-card">
+                    <div class="owner-header">
+                        <h4>Flat Details</h4>
+                        <button type="button" id="edit-flat-btn" class="icon-btn" title="Edit Master Data">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="input-group slim">
+                            <label>Owner Name</label>
+                            <input type="text" id="owner-name" disabled required>
+                        </div>
+                        <div class="input-group slim">
+                            <label>Phone (WhatsApp)</label>
+                            <input type="text" id="owner-phone" disabled required>
+                        </div>
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="input-group slim">
+                            <label>Usual Fee (₹)</label>
+                            <input type="number" id="usual-fee" disabled required>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="is-rented" disabled>
+                            <label for="is-rented">Is Rented (R)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="duration-card">
+                    <h4>Maintenance Duration</h4>
+                    <div class="form-row two-col">
+                        <div class="input-group">
+                            <label>From Month</label>
+                            <input type="month" id="month-from" required>
+                        </div>
+                        <div class="input-group">
+                            <label>To Month</label>
+                            <input type="month" id="month-to" required>
+                        </div>
+                    </div>
+                    <p class="calc-result" id="months-calculated">Total: 0 Months</p>
+                </div>
+
+                <div class="financial-card">
+                    <div class="form-row two-col">
+                        <div class="input-group">
+                            <label>Cash Amount (₹)</label>
+                            <input type="number" id="cash-amount" value="0" min="0" step="1">
+                        </div>
+                        <div class="input-group">
+                            <label>Online/UPI (₹)</label>
+                            <input type="number" id="online-amount" value="0" min="0" step="1">
+                        </div>
+                    </div>
+                    <div class="total-display">
+                        <span>Total Amount</span>
+                        <h2 id="total-amount-display">₹0</h2>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Remarks (Optional)</label>
+                    <input type="text" id="remarks" placeholder="e.g., Cheque No. 12345">
+                </div>
+
+                <button type="submit" id="submit-receipt-btn" class="btn-primary" style="margin-top: 1rem; width: 100%;">Log Receipt</button>
+            </form>
         </section>
     </main>
 
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/engine.js">
 </body>
 </html>
