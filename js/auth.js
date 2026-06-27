@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault(); // JavaScript-level block
+        e.preventDefault(); 
         
         loginBtn.textContent = 'Signing In...';
         errorText.classList.add('hidden');
@@ -48,11 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (error) {
-            if (error.message.includes('Invalid login credentials')) {
-                errorText.textContent = 'Invalid credentials. Please check your email and password.';
-            } else {
-                errorText.textContent = error.message;
-            }
+            errorText.textContent = error.message.includes('Invalid') ? 'Invalid credentials.' : error.message;
             errorText.classList.remove('hidden');
             loginBtn.textContent = 'Sign In';
         } else {
@@ -86,9 +82,17 @@ document.addEventListener('DOMContentLoaded', () => {
         setFinancialYear();
     }
 
-    startSessionBtn.addEventListener('click', () => {
+    // THIS IS THE FIX: Fetch data ONLY when navigating to the Workspace
+    startSessionBtn.addEventListener('click', async () => {
         if (!sessionDatePicker.value) return; 
         
+        startSessionBtn.textContent = 'Loading...';
+        
+        // Safely call the engine initialization we just created
+        if (typeof window.initFormEngine === 'function') {
+            await window.initFormEngine();
+        }
+
         activeSessionDateDisplay.textContent = `Date: ${sessionDatePicker.value}`;
         
         if (actualFormDate) {
@@ -96,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             actualFormDate.disabled = true; 
         }
 
+        startSessionBtn.textContent = 'Continue to Ledger';
         hubView.className = 'view hidden-view';
         workspaceView.className = 'view active-view';
     });
@@ -124,7 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function setDynamicGreeting() {
         const hour = new Date().getHours();
         let greeting = 'Good Evening';
-        
         if (hour >= 5 && hour < 12) greeting = 'Good Morning';
         else if (hour >= 12 && hour < 17) greeting = 'Good Afternoon';
         
@@ -136,15 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const today = new Date();
         const currentYear = today.getFullYear();
         const currentMonth = today.getMonth(); 
-        
-        let startYear, endYear;
-        if (currentMonth >= 3) { 
-            startYear = currentYear;
-            endYear = currentYear + 1;
-        } else { 
-            startYear = currentYear - 1;
-            endYear = currentYear;
-        }
+        let startYear = currentMonth >= 3 ? currentYear : currentYear - 1;
+        let endYear = startYear + 1;
         
         const fyEl = document.getElementById('financial-year');
         if(fyEl) fyEl.textContent = `FY ${startYear.toString().slice(-2)}-${endYear.toString().slice(-2)}`;
