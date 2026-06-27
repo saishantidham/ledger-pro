@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/form.css">
 </head>
 <body>
+
     <main id="auth-view" class="view active-view">
         <div class="auth-container">
             <div class="glass-card login-card">
@@ -20,7 +21,7 @@
                 <h1>Ledger Pro</h1>
                 <p class="subtitle">Secure Maintenance Portal</p>
                 
-                <form id="login-form">
+                <form id="login-form" onsubmit="event.preventDefault();">
                     <div class="input-group">
                         <input type="email" id="email" placeholder="Admin Email" required>
                     </div>
@@ -67,7 +68,7 @@
                 </div>
             </section>
 
-            <section class="session-setup fluent-card mt-large highlight-border">
+            <section class="fluent-card mt-large highlight-border">
                 <h3>Start Logging Session</h3>
                 <p class="text-muted text-sm mb-medium">Select the date context for your entries. All receipts generated in this session will default to this date.</p>
                 <div class="input-group">
@@ -87,13 +88,118 @@
                 <h3>New Entry</h3>
                 <p id="active-session-date" class="text-muted text-xs">Date: --</p>
             </div>
-            <div style="width: 40px;"></div> </header>
+            <div style="width: 44px;"></div> </header>
 
         <section id="form-engine-container" class="form-engine">
-             <form id="receipt-form" class="ledger-form">
-                </form>
+            <form id="receipt-form" class="ledger-form" onsubmit="event.preventDefault();">
+                
+                <div class="fluent-card primary-card">
+                    <div class="form-row two-col align-center">
+                        <div class="input-group">
+                            <label>Entry Date</label>
+                            <input type="date" id="receipt-date" required>
+                        </div>
+                        <div class="mode-toggle-container">
+                            <label class="switch">
+                                <input type="checkbox" id="mode-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="toggle-label" id="historical-label">Historical</span>
+                        </div>
+                    </div>
+                    <div class="input-group mt-compact">
+                        <label>Receipt Number</label>
+                        <input type="text" id="receipt-no" placeholder="Auto-generated (Live Mode)" disabled>
+                    </div>
+                </div>
+
+                <div class="fluent-card">
+                    <div class="input-group">
+                        <label>Select Flat</label>
+                        <select id="flat-select" required>
+                            <option value="" disabled selected>Loading flats...</option>
+                        </select>
+                    </div>
+                    <div class="form-row two-col mt-compact">
+                        <div class="input-group">
+                            <label>Owner Name</label>
+                            <input type="text" id="owner-name" disabled required>
+                        </div>
+                        <div class="input-group">
+                            <label>WhatsApp No.</label>
+                            <input type="text" id="owner-phone" disabled required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fluent-card">
+                    <div class="form-row two-col">
+                        <div class="input-group">
+                            <label>From Month</label>
+                            <input type="month" id="month-from" required>
+                        </div>
+                        <div class="input-group">
+                            <label>To Month</label>
+                            <input type="month" id="month-to" required>
+                        </div>
+                    </div>
+                    <div class="calc-footer">
+                        <p class="calc-result" id="months-calculated">0 Months</p>
+                        <p class="fee-hint">Base: ₹<span id="usual-fee-display">0</span>/mo</p>
+                        <input type="hidden" id="usual-fee">
+                    </div>
+                </div>
+
+                <div class="fluent-card highlight-card">
+                    <div class="form-row two-col">
+                        <div class="input-group">
+                            <label>Cash (₹)</label>
+                            <input type="number" id="cash-amount" value="0" min="0" step="1">
+                        </div>
+                        <div class="input-group">
+                            <label>Online (₹)</label>
+                            <input type="number" id="online-amount" value="0" min="0" step="1">
+                        </div>
+                    </div>
+                    <div class="total-display">
+                        <span>Total Paid</span>
+                        <h2 id="total-amount-display">₹0</h2>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Remarks (Optional)</label>
+                    <input type="text" id="remarks" placeholder="e.g., Cheque No. / Ref ID">
+                </div>
+
+                <button type="submit" id="submit-receipt-btn" class="btn-primary full-width">Log Receipt</button>
+            </form>
         </section>
     </main>
 
-    </body>
+    <div id="settings-sheet" class="bottom-sheet-overlay hidden">
+        <div class="bottom-sheet glass-panel">
+            <div class="sheet-header">
+                <h3>App Settings</h3>
+                <button id="close-settings-btn" class="btn-fluent-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="sheet-body">
+                <div class="input-group">
+                    <label>WhatsApp Magic Template</label>
+                    <textarea id="wa-template" rows="3">Hello {name}, your maintenance receipt ({receipt_no}) for Rs. {amount} has been successfully logged. Thank you!</textarea>
+                    <p class="help-text">Available tags: {name}, {receipt_no}, {amount}, {flat_no}</p>
+                </div>
+                <button id="logout-btn" class="btn-danger full-width mt-medium">Secure Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/engine.js"></script>
+</body>
 </html>
