@@ -1,1 +1,70 @@
-Main home page (index)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ledger Pro</title>
+    
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/form.css">
+    <link rel="stylesheet" href="css/modal.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <main id="auth-view" class="view active-view">
+        <div class="auth-container">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h1>Ledger Pro</h1>
+            <p>Society Maintenance Logbook</p>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <input type="email" id="email" placeholder="Admin Email" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Password" required>
+                </div>
+                <button type="submit" id="login-btn" class="btn-primary">Authenticate</button>
+                <p id="auth-error" class="error-text hidden"></p>
+            </form>
+        </div>
+    </main>
+
+    <main id="dashboard-view" class="view hidden-view">
+        <header class="app-header">
+            <div class="header-titles">
+                <h2>Ledger Pro</h2>
+                <span id="financial-year" class="fy-badge">FY 26-27</span>
+            </div>
+            <button id="logout-btn" class="btn-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </header>
+
+        <section class="dashboard-stats">
+            <div class="stat-card">
+                <p class="stat-label">Today's Collection</p>
+                <h3 id="stat-today">₹0</h3>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Month Total</p>
+                <h3 id="stat-month">₹0</h3>
+            </div>
+        </section>
+
+        <section id="form-engine-container" class="form-engine">
+            <p class="text-muted" style="text-align: center; padding: 2rem;">[ Form Engine will render here ]</p>
+        </section>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
