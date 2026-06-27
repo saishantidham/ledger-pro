@@ -24,10 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let flatsData = [];
 
     // ==========================================
-    // 1. DELAYED DATA FETCHING (Fixes 401 Error)
+    // 1. DELAYED DATA FETCHING
     // ==========================================
     window.initFormEngine = async function() {
-        // Prevent fetching twice if we go back and forth
         if (flatsData.length > 0) return; 
         
         DOM.flatSelect.innerHTML = '<option value="" disabled selected>Loading flats...</option>';
@@ -120,4 +119,93 @@ document.addEventListener('DOMContentLoaded', () => {
     DOM.monthTo.addEventListener('change', calculateMonthsAndFees);
     DOM.cashAmount.addEventListener('input', calculateTotal);
     DOM.onlineAmount.addEventListener('input', calculateTotal);
+
+    // ==========================================
+    // 5. DATABASE INSERTION & SUCCESS MODAL
+    // ==========================================
+    const modalOverlay = document.getElementById('success-modal-overlay');
+    const snapshotText = document.getElementById('snapshot-text');
+    const btnNext = document.getElementById('modal-next-btn');
+    
+    // Store latest payload for Export step later
+    window.lastLoggedReceipt = null; 
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (!DOM.flatSelect.value) {
+            alert("Please select a flat.");
+            return;
+        }
+
+        const cash = parseFloat(DOM.cashAmount.value) || 0;
+        const online = parseFloat(DOM.onlineAmount.value) || 0;
+        
+        if (cash + online === 0) {
+            alert("Total amount cannot be zero.");
+            return;
+        }
+
+        DOM.submitBtn.textContent = "Processing...";
+        DOM.submitBtn.disabled = true;
+
+        const payload = {
+            flat_no: DOM.flatSelect.value,
+            date: DOM.receiptDate.value,
+            months_covered: `${DOM.monthFrom.value} to ${DOM.monthTo.value}`,
+            cash_amount: cash,
+            online_amount: online,
+            remarks: DOM.remarks.value
+        };
+
+        if (DOM.modeToggle.checked) {
+            payload.receipt_no = DOM.receiptNo.value;
+        }
+
+        try {
+            // Push to Supabase Ledger
+            const insertedData = await DB.insertReceipt(payload);
+            
+            window.lastLoggedReceipt = insertedData;
+
+            const flatName = flatsData.find(f => f.flat_no === insertedData.flat_no)?.owner_name.split(' ')[0] || '';
+            snapshotText.textContent = `[Rcpt: ${insertedData.receipt_no}] | Flat: ${insertedData.flat_no} | ${flatName} | Total: ₹${insertedData.total_amount}`;
+
+            // Trigger Glass Modal
+            modalOverlay.classList.remove('hidden');
+            setTimeout(() => modalOverlay.classList.add('visible'), 10);
+            
+        } catch (error) {
+            alert("Failed to log receipt. Check console for details.");
+            console.error(error);
+        } finally {
+            DOM.submitBtn.textContent = "Log Receipt";
+            DOM.submitBtn.disabled = false;
+        }
+    });
+
+    // Reset Form for Next Entry
+    btnNext.addEventListener('click', () => {
+        modalOverlay.classList.remove('visible');
+        setTimeout(() => modalOverlay.classList.add('hidden'), 400);
+        
+        DOM.cashAmount.value = "0";
+        DOM.onlineAmount.value = "0";
+        DOM.totalAmountDisplay.textContent = "₹0";
+        DOM.remarks.value = "";
+        DOM.monthFrom.value = "";
+        DOM.monthTo.value = "";
+        DOM.monthsCalculated.textContent = "0 Months";
+        DOM.monthsCalculated.style.color = "inherit";
+        DOM.flatSelect.value = "";
+        DOM.ownerName.value = "";
+        DOM.ownerPhone.value = "";
+        DOM.usualFeeHidden.value = "";
+        DOM.usualFeeDisplay.textContent = "0";
+        
+        if (DOM.modeToggle.checked) {
+            DOM.receiptNo.value = "";
+            DOM.receiptNo.focus();
+        }
+    });
 });
