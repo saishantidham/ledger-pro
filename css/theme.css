@@ -1,57 +1,47 @@
 :root {
-    /* Sai Baba Theme Variables (Fresh Light Mode) */
     --color-saffron: #F97316;
-    --color-saffron-dark: #C2410C;
+    --color-saffron-dark: #EA580C;
+    --color-bg: #F9FAFB;
+    --color-surface: #FFFFFF;
+    --color-border: #E5E7EB;
     
-    /* Light Theme Palette */
-    --color-bg: #F3F4F6;             /* Soft gray background */
-    --color-surface: #FFFFFF;        /* Pure white cards/inputs */
-    --color-surface-light: #E5E7EB;  /* Subtle gray for badges */
-    --color-border: #D1D5DB;         /* Crisp light borders */
-    
-    /* Text Colors */
-    --color-text-main: #111827;      /* Deep charcoal for readability */
-    --color-text-muted: #6B7280;     /* Secondary gray text */
-    --color-white: #FFFFFF;          /* Kept strictly for button text */
-    
-    /* Status Colors */
+    --color-text-main: #111827;
+    --color-text-muted: #6B7280;
+    --color-white: #FFFFFF;
     --color-error: #EF4444;
-    --color-success: #16A34A;
+    
+    /* Highly Compact, Fluid Sizing for Mobile */
+    --font-xs: clamp(0.7rem, 2vw, 0.75rem);
+    --font-sm: clamp(0.8rem, 2.5vw, 0.875rem);
+    --font-base: clamp(0.9rem, 3vw, 1rem);
+    --font-lg: clamp(1.1rem, 4vw, 1.25rem);
+    --font-xl: clamp(1.3rem, 5vw, 1.5rem);
 
-    /* Fluid Typography */
-    --font-xs: clamp(0.75rem, 1vw + 0.5rem, 0.875rem);
-    --font-sm: clamp(0.875rem, 1.2vw + 0.5rem, 1rem);
-    --font-base: clamp(1rem, 1.5vw + 0.5rem, 1.125rem);
-    --font-lg: clamp(1.25rem, 2vw + 0.5rem, 1.5rem);
-    --font-xl: clamp(1.5rem, 3vw + 0.5rem, 2rem);
+    /* Compact Spacing */
+    --space-sm: clamp(0.4rem, 2vw, 0.5rem);
+    --space-md: clamp(0.75rem, 3vw, 1rem);
+    --space-lg: clamp(1rem, 4vw, 1.5rem);
 
-    /* Spacing & Radii */
+    --radius-sm: 8px;
     --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 24px;
+    --radius-lg: 20px;
+    
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
-
-body {
-    background-color: var(--color-bg);
-    color: var(--color-text-main);
-    -webkit-font-smoothing: antialiased;
-    line-height: 1.5;
-}
-
-/* Utilities */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+body { background-color: var(--color-bg); color: var(--color-text-main); -webkit-font-smoothing: antialiased; }
 .view { display: none; }
 .active-view { display: block; animation: fadeIn 0.3s ease-in-out; }
 .hidden-view { display: none !important; }
-.text-muted { color: var(--color-text-muted) !important; }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Glassmorphism Utility */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
 }
