@@ -11,175 +11,89 @@
     <link rel="stylesheet" href="css/form.css">
 </head>
 <body>
-
-    <!-- AUTHENTICATION VIEW -->
     <main id="auth-view" class="view active-view">
         <div class="auth-container">
-            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <h1>Ledger Pro</h1>
-            <p>Society Maintenance</p>
-            
-            <form id="login-form">
-                <div class="input-group">
-                    <input type="email" id="email" placeholder="Admin Email" required>
-                </div>
-                <div class="input-group">
-                    <input type="password" id="password" placeholder="Password" required>
-                </div>
-                <button type="submit" id="login-btn" class="btn-primary">Authenticate</button>
-                <p id="auth-error" class="error-text hidden"></p>
-            </form>
-        </div>
-    </main>
-
-    <!-- DASHBOARD VIEW -->
-    <main id="dashboard-view" class="view hidden-view">
-        <header class="app-header">
-            <div class="header-titles">
-                <h2 id="greeting-text">Good Evening,</h2>
-                <div class="badge-row">
-                    <span id="financial-year" class="badge">FY 26-27</span>
-                    <span class="badge badge-outline">Admin</span>
-                </div>
-            </div>
-            <button id="settings-toggle-btn" class="btn-icon" aria-label="Settings">
-                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            <div class="glass-card login-card">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-            </button>
-        </header>
-
-        <section class="dashboard-stats">
-            <div class="stat-card">
-                <p class="stat-label">Today's Collection</p>
-                <h3 id="stat-today">₹0</h3>
-            </div>
-            <div class="stat-card">
-                <p class="stat-label">Month Total</p>
-                <h3 id="stat-month">₹0</h3>
-            </div>
-        </section>
-
-        <!-- Compact Form Engine -->
-        <section id="form-engine-container" class="form-engine">
-            <form id="receipt-form" class="ledger-form">
+                <h1>Ledger Pro</h1>
+                <p class="subtitle">Secure Maintenance Portal</p>
                 
-                <!-- Master Entry Control -->
-                <div class="card-group primary-card">
-                    <div class="form-row two-col align-center">
-                        <div class="input-group">
-                            <label>Entry Date</label>
-                            <input type="date" id="receipt-date" required>
-                        </div>
-                        <div class="mode-toggle-container">
-                            <label class="switch">
-                                <input type="checkbox" id="mode-toggle">
-                                <span class="slider round"></span>
-                            </label>
-                            <span class="toggle-label" id="historical-label">Historical</span>
-                        </div>
-                    </div>
-                    <div class="input-group mt-compact">
-                        <label>Receipt Number</label>
-                        <input type="text" id="receipt-no" placeholder="Auto-generated (Live Mode)" disabled>
-                    </div>
-                </div>
-
-                <!-- Flat Details -->
-                <div class="card-group">
+                <form id="login-form">
                     <div class="input-group">
-                        <label>Select Flat</label>
-                        <select id="flat-select" required>
-                            <option value="" disabled selected>Loading flats...</option>
-                        </select>
+                        <input type="email" id="email" placeholder="Admin Email" required>
                     </div>
-                    <div class="form-row two-col mt-compact">
-                        <div class="input-group slim">
-                            <label>Owner Name</label>
-                            <input type="text" id="owner-name" disabled required>
-                        </div>
-                        <div class="input-group slim">
-                            <label>WhatsApp No.</label>
-                            <input type="text" id="owner-phone" disabled required>
-                        </div>
+                    <div class="input-group">
+                        <input type="password" id="password" placeholder="Password" required>
+                    </div>
+                    <button type="submit" id="login-btn" class="btn-primary full-width mt-compact">Sign In</button>
+                    <p id="auth-error" class="error-text hidden"></p>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <main id="hub-view" class="view hidden-view">
+        <div class="hub-container">
+            <header class="hub-header">
+                <div>
+                    <h2 id="greeting-text" class="fluent-title">Good Evening,</h2>
+                    <p class="text-muted">Here is your society overview for <span id="financial-year">FY 26-27</span></p>
+                </div>
+                <button id="hub-settings-btn" class="btn-fluent-icon" aria-label="Settings">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </button>
+            </header>
+
+            <section class="dashboard-stats mt-large">
+                <div class="fluent-card stat-card">
+                    <div class="stat-icon-wrapper success-bg">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </div>
+                    <div>
+                        <p class="stat-label">Today's Collection</p>
+                        <h3 id="stat-today">₹0</h3>
                     </div>
                 </div>
-
-                <!-- Multi-Month Calculator -->
-                <div class="card-group">
-                    <div class="form-row two-col">
-                        <div class="input-group">
-                            <label>From Month</label>
-                            <input type="month" id="month-from" required>
-                        </div>
-                        <div class="input-group">
-                            <label>To Month</label>
-                            <input type="month" id="month-to" required>
-                        </div>
+                <div class="fluent-card stat-card">
+                    <div class="stat-icon-wrapper primary-bg">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     </div>
-                    <div class="calc-footer">
-                        <p class="calc-result" id="months-calculated">0 Months</p>
-                        <p class="fee-hint">Base: ₹<span id="usual-fee-display">0</span>/mo</p>
-                        <input type="hidden" id="usual-fee">
+                    <div>
+                        <p class="stat-label">Month Total</p>
+                        <h3 id="stat-month">₹0</h3>
                     </div>
                 </div>
+            </section>
 
-                <!-- Financials -->
-                <div class="card-group highlight-card">
-                    <div class="form-row two-col">
-                        <div class="input-group">
-                            <label>Cash (₹)</label>
-                            <input type="number" id="cash-amount" value="0" min="0" step="1">
-                        </div>
-                        <div class="input-group">
-                            <label>Online (₹)</label>
-                            <input type="number" id="online-amount" value="0" min="0" step="1">
-                        </div>
-                    </div>
-                    <div class="total-display">
-                        <span>Total Paid</span>
-                        <h2 id="total-amount-display">₹0</h2>
-                    </div>
-                </div>
-
+            <section class="session-setup fluent-card mt-large highlight-border">
+                <h3>Start Logging Session</h3>
+                <p class="text-muted text-sm mb-medium">Select the date context for your entries. All receipts generated in this session will default to this date.</p>
                 <div class="input-group">
-                    <label>Remarks (Optional)</label>
-                    <input type="text" id="remarks" placeholder="e.g., Cheque No. / Ref ID">
+                    <input type="date" id="session-date-picker" required>
                 </div>
+                <button id="start-session-btn" class="btn-primary full-width mt-medium">Continue to Ledger</button>
+            </section>
+        </div>
+    </main>
 
-                <button type="submit" id="submit-receipt-btn" class="btn-primary full-width">Log Receipt</button>
-            </form>
+    <main id="workspace-view" class="view hidden-view">
+        <header class="workspace-header">
+            <button id="back-to-hub-btn" class="btn-fluent-icon" aria-label="Back to Hub">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <div class="workspace-title">
+                <h3>New Entry</h3>
+                <p id="active-session-date" class="text-muted text-xs">Date: --</p>
+            </div>
+            <div style="width: 40px;"></div> </header>
+
+        <section id="form-engine-container" class="form-engine">
+             <form id="receipt-form" class="ledger-form">
+                </form>
         </section>
     </main>
 
-    <!-- SETTINGS BOTTOM SHEET (Glassmorphism) -->
-    <div id="settings-sheet" class="bottom-sheet-overlay hidden">
-        <div class="bottom-sheet glass-panel">
-            <div class="sheet-header">
-                <h3>App Settings</h3>
-                <button id="close-settings-btn" class="btn-icon">
-                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <div class="sheet-body">
-                <div class="input-group">
-                    <label>WhatsApp Magic Template</label>
-                    <textarea id="wa-template" rows="3">Hello {name}, your maintenance receipt ({receipt_no}) for Rs. {amount} has been successfully logged. Thank you!</textarea>
-                    <p class="help-text">Available tags: {name}, {receipt_no}, {amount}, {flat_no}</p>
-                </div>
-                <button id="logout-btn" class="btn-danger full-width mt-compact">Secure Logout</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/db.js"></script>
-    <script src="js/engine.js"></script>
-</body>
+    </body>
 </html>
