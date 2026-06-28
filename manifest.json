@@ -1,1 +1,18 @@
-# PWA manifest to install as a native mobile app
+{
+  "name": "Ledger Pro",
+  "short_name": "LedgerPro",
+  "description": "Society Maintenance Logbook",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F3F4F6",
+  "theme_color": "#F26522",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdib3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjI2NTIyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xMiAyTDIgN2wxMCA1IDEwLTUtMTAtNXpNMCAxN2wxMCA1IDEwLTUiLz48L3N2Zz4=",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
