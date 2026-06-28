@@ -13,30 +13,43 @@
 </head>
 <body>
 
-    <main id="auth-view" class="view active-view flex-center">
-        <div class="glass-card login-card">
+    <!-- 1. AUTHENTICATION (Restored Premium Card) -->
+    <main id="auth-view" class="view active-view">
+        <div class="login-card">
+            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
             <h1 class="brand-title">Ledger Pro</h1>
-            <p class="subtitle">Maintenance Portal</p>
+            <p class="subtitle">Secure Maintenance Portal</p>
+            
             <form id="login-form" onsubmit="event.preventDefault();">
-                <input type="email" id="email" class="compact-input" placeholder="Admin Email" required>
-                <input type="password" id="password" class="compact-input mt-sm" placeholder="Password" required>
-                <button type="submit" id="login-btn" class="btn-primary full-width mt-md">Sign In</button>
+                <div class="input-wrap text-left">
+                    <input type="email" id="email" class="compact-input" placeholder="Admin Email" required>
+                </div>
+                <div class="input-wrap text-left mt-sm">
+                    <input type="password" id="password" class="compact-input" placeholder="Password" required>
+                </div>
+                <button type="submit" id="login-btn" class="btn-primary full-width mt-lg">Sign In</button>
                 <p id="auth-error" class="error-text hidden"></p>
             </form>
         </div>
     </main>
 
+    <!-- 2. THE HUB (Premium Widgets) -->
     <main id="hub-view" class="view hidden-view screen-lock">
         <div class="hub-wrapper">
             <header class="hub-header">
                 <div>
                     <h2 id="greeting-text" class="hero-title">Good Evening,</h2>
-                    <p class="text-muted text-xs">Overview for <span id="financial-year">FY 26-27</span></p>
+                    <p class="text-muted text-sm">Overview for <span id="financial-year">FY 26-27</span></p>
                 </div>
-                <button id="hub-settings-btn" class="icon-btn">⚙️</button>
+                <button id="hub-settings-btn" class="icon-btn" aria-label="Settings">
+                    <!-- Crisp SVG Settings Icon -->
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </button>
             </header>
 
-            <section class="calendar-card mt-md">
+            <section class="calendar-card mt-sm">
                 <div class="calendar-header">
                     <h4 id="cal-month-year">June 2026</h4>
                 </div>
@@ -44,24 +57,29 @@
                     <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                 </div>
                 <div id="calendar-grid" class="calendar-grid">
-                    </div>
-                <p class="text-center text-xs text-muted mt-sm">Select a date to begin session</p>
+                    <!-- JS Populates -->
+                </div>
+                <p class="text-center text-xs text-muted mt-md">Tap a date to begin logging session</p>
             </section>
 
-            <button id="view-reports-btn" class="btn-secondary full-width mt-md">
-                <span>📊 View Master Report</span>
-                <span class="text-xs">Excel Generation</span>
+            <button id="view-reports-btn" class="btn-secondary full-width mt-lg">
+                <!-- Clean Bar Chart SVG -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="18" y="3" width="4" height="18" rx="1"></rect><rect x="10" y="8" width="4" height="13" rx="1"></rect><rect x="2" y="13" width="4" height="8" rx="1"></rect></svg>
+                <div style="text-align: left;">
+                    <div style="font-size: var(--f-base); line-height: 1.1;">View Master Report</div>
+                    <div class="text-xs text-muted" style="font-weight: 500;">Excel Generator</div>
+                </div>
             </button>
 
             <div class="flex-spacer"></div>
 
-            <footer class="stats-row">
+            <footer class="stats-dock">
                 <div class="stat-box">
                     <span class="stat-val" id="stat-today">₹0</span>
                     <span class="stat-lbl">Today's Total</span>
                 </div>
                 <div class="stat-divider"></div>
-                <div class="stat-box">
+                <div class="stat-box" style="align-items: flex-end; text-align: right;">
                     <span class="stat-val" id="stat-month">₹0</span>
                     <span class="stat-lbl">Month Total</span>
                 </div>
@@ -69,16 +87,20 @@
         </div>
     </main>
 
+    <!-- 3. THE WORKSPACE (Zero-Scroll Form) -->
     <main id="workspace-view" class="view hidden-view screen-lock">
         <header class="workspace-header">
-            <button id="back-to-hub-btn" class="icon-btn">←</button>
+            <button id="back-to-hub-btn" class="icon-btn">
+                <!-- Clean Arrow Left SVG -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
             <div class="workspace-title">
                 <h3 id="serial-display">Entry #--</h3>
-                <p id="active-session-date" class="text-xs text-saffron">--/--/----</p>
+                <p id="active-session-date" class="text-xs text-saffron font-semibold">--/--/----</p>
             </div>
             <div class="mode-toggle-mini">
                 <label class="switch-mini"><input type="checkbox" id="mode-toggle"><span class="slider-mini"></span></label>
-                <span class="text-xs">Edit</span>
+                <span class="text-xs text-muted" style="font-weight: 600; margin-top: 4px;">Edit</span>
             </div>
         </header>
 
@@ -97,14 +119,16 @@
                     </div>
                 </div>
 
-                <button type="button" id="open-flat-search" class="flat-search-trigger mt-sm">
-                    🔍 Search Owner, Flat, or Bldg...
+                <button type="button" id="open-flat-search" class="flat-search-trigger mt-md">
+                    <!-- Search SVG -->
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <span>Search Owner, Flat, or Bldg...</span>
                 </button>
 
-                <div class="grid-2 mt-sm">
+                <div class="grid-2 mt-md">
                     <div class="input-wrap">
                         <label>Owner Name</label>
-                        <input type="text" id="owner-name" class="compact-input" placeholder="Name" required>
+                        <input type="text" id="owner-name" class="compact-input bold-val" placeholder="Name" required>
                     </div>
                     <div class="input-wrap">
                         <label>WhatsApp No.</label>
@@ -112,7 +136,7 @@
                     </div>
                 </div>
 
-                <div class="grid-2 mt-sm align-end">
+                <div class="grid-2 mt-md align-end">
                     <div class="input-wrap">
                         <label>Base Fee (₹)</label>
                         <input type="number" id="base-fee" class="compact-input" placeholder="0" required>
@@ -120,11 +144,11 @@
                     <label class="checkbox-wrap">
                         <input type="checkbox" id="is-rented">
                         <span class="check-box"></span>
-                        <span class="text-sm">(R) Rented</span>
+                        <span class="text-sm font-semibold text-muted">(R) Rented</span>
                     </label>
                 </div>
 
-                <div class="grid-2 mt-sm">
+                <div class="grid-2 mt-md">
                     <div class="input-wrap relative">
                         <label>From Month</label>
                         <div id="display-month-from" class="fake-input">MMM YYYY</div>
@@ -136,9 +160,11 @@
                         <input type="month" id="month-to" class="hidden-native-picker" required>
                     </div>
                 </div>
-                <div class="calc-text mt-xs" id="months-calculated">0 Months</div>
+                <div class="flex-between mt-xs">
+                    <div class="text-xs text-muted font-semibold" id="months-calculated">0 Months</div>
+                </div>
 
-                <div class="grid-2 mt-sm highlight-row">
+                <div class="grid-2 mt-md">
                     <div class="input-wrap">
                         <label>Cash</label>
                         <input type="number" id="cash-amount" class="compact-input bold-val" placeholder="0" min="0">
@@ -150,41 +176,40 @@
                 </div>
                 <div class="total-bar">Total: <span id="total-amount-display">₹0</span></div>
 
-                <div class="input-wrap mt-sm">
+                <div class="input-wrap mt-md">
                     <div class="flex-between">
                         <label>Remarks</label>
-                        <span id="char-count" class="text-xs text-muted">0/50</span>
+                        <span id="char-count" class="text-xs text-muted font-semibold">0/50</span>
                     </div>
                     <input type="text" id="remarks" class="compact-input" placeholder="Optional notes..." maxlength="50">
                 </div>
 
-                <button type="submit" id="submit-receipt-btn" class="btn-primary full-width mt-md">Log Entry</button>
+                <div class="flex-spacer"></div>
+                <button type="submit" id="submit-receipt-btn" class="btn-primary full-width">Log Entry</button>
             </form>
         </section>
     </main>
 
+    <!-- 4. FLAT SEARCH MODAL (Bottom Sheet) -->
     <div id="flat-search-modal" class="bottom-sheet-overlay hidden">
-        <div class="bottom-sheet glass-panel h-80">
+        <div class="bottom-sheet h-80">
             <div class="sheet-header">
                 <h3>Select Flat</h3>
-                <button id="close-flat-search" class="icon-btn">✕</button>
+                <button id="close-flat-search" class="icon-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
             </div>
-            <input type="text" id="flat-search-input" class="compact-input search-box" placeholder="Search A-101, Ramesh...">
+            <div class="relative search-box">
+                <input type="text" id="flat-search-input" class="compact-input" placeholder="Search A-101, Ramesh..." style="padding-left: 2.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-muted)" stroke-width="2" style="position: absolute; left: 12px; top: 12px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
             <ul id="flat-list" class="virtual-list">
-                </ul>
+                <!-- JS Populates -->
+            </ul>
         </div>
     </div>
 
-    <div id="success-modal-overlay" class="modal-overlay hidden">
-        <div class="compact-modal glass-panel">
-            <div class="success-icon-ring">✓</div>
-            <h3>Entry Logged</h3>
-            <p class="mono-text mt-sm" id="snapshot-text">...</p>
-            <button id="modal-wa-btn" class="btn-success full-width mt-md">WhatsApp Receipt</button>
-            <button id="modal-next-btn" class="btn-ghost full-width mt-sm">Next Entry</button>
-        </div>
-    </div>
-
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
     <script src="js/db.js"></script>
