@@ -16,7 +16,6 @@ window.UX = {
             tSounds.onchange = (e) => { this.soundsOn = e.target.checked; localStorage.setItem('sound', this.soundsOn); }
         }
 
-        // Global click listener for UI tactile feedback
         document.addEventListener('click', (e) => {
             const isClickable = e.target.tagName === 'BUTTON' || e.target.closest('.icon-btn') || e.target.closest('.cal-day');
             if (isClickable) {
@@ -29,7 +28,6 @@ window.UX = {
     playClick() {
         if(!this.soundsOn) return;
         try {
-            // Synthesize a clean UI "pop" without needing external files
             if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
             
@@ -54,6 +52,40 @@ window.UX = {
 
 document.addEventListener('DOMContentLoaded', () => {
     UX.init();
+
+    // === THE VIRTUAL KEYBOARD TRAP FIX ===
+    function initKeyboardTrapFix() {
+        if (!window.visualViewport) return;
+        const workspace = document.getElementById('workspace-view');
+        
+        window.visualViewport.addEventListener('resize', () => {
+            // Dynamically adjust the container to the visual viewport (avoids squishing)
+            workspace.style.height = `${window.visualViewport.height}px`;
+            
+            // If the keyboard is clearly active (viewport shrank > 20%)
+            if (window.visualViewport.height < window.innerHeight * 0.8) {
+                const activeElement = document.activeElement;
+                if (activeElement && activeElement.tagName === 'INPUT') {
+                    // Smoothly scroll the focused input into the visible safe area
+                    setTimeout(() => {
+                        activeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                }
+            } else {
+                // Reset to locked 100dvh when keyboard closes
+                workspace.style.height = '100dvh';
+                window.scrollTo(0,0);
+            }
+        });
+
+        // iOS Safari safeguard: force scroll reset on blur
+        document.addEventListener('focusout', () => {
+            if (window.visualViewport.height >= window.innerHeight * 0.8) {
+                window.scrollTo(0, 0);
+            }
+        });
+    }
+    initKeyboardTrapFix();
 
     // === APP STATE ===
     let flatsData = [];
@@ -87,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentSelectedFlatNo = null;
 
-    // === EXPORTED ENGINE STARTUP ===
     window.loadHubData = async function() {
         const loaderText = document.getElementById('loader-text');
         if(loaderText) loaderText.textContent = "Syncing ledger...";
@@ -104,7 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     }
 
-    // === 1. HUB & CALENDAR ===
     document.getElementById('prev-month-btn')?.addEventListener('click', () => { currentHubDate.setMonth(currentHubDate.getMonth() - 1); renderCalendar(); });
     document.getElementById('next-month-btn')?.addEventListener('click', () => { currentHubDate.setMonth(currentHubDate.getMonth() + 1); renderCalendar(); });
 
@@ -145,7 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('stat-month').textContent = `₹${tMonth}`;
     }
 
-    // === 2. RECENT LOGS SHEET ===
     document.getElementById('view-recent-btn')?.addEventListener('click', () => {
         const sheet = document.getElementById('recent-logs-sheet');
         const list = document.getElementById('recent-logs-list');
@@ -177,14 +206,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('recent-logs-sheet').classList.add('hidden');
     });
 
-    // Global func so the inline HTML button can trigger it
     window.shareRecent = function(flat, amount, rcpt) {
         UX.playClick();
         const msg = `Hello,%0AYour maintenance payment of ₹${amount} for Flat ${flat} (Rcpt: ${rcpt}) has been received successfully.%0AThank you!`;
         window.open(`https://wa.me/?text=${msg}`, '_blank');
     };
 
-    // === 3. WORKSPACE TRANSITION ===
     function openWorkspace(dateStr) {
         selectedSessionDate = new Date(dateStr);
         activeSessionDateDisplay.textContent = formatDate(selectedSessionDate);
@@ -197,7 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.getElementById('back-to-hub-btn').onclick = () => { switchView('hub'); window.loadHubData(); };
 
-    // === 4. FLAT SEARCH MODAL ===
     const searchModal = document.getElementById('flat-search-modal');
     const searchInput = document.getElementById('flat-search-input');
     const flatList = document.getElementById('flat-list');
@@ -232,7 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
         calculateMonths();
     }
 
-    // === 5. CUSTOM FORMATTING & CALCS ===
     function formatDate(dateObj) { return dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
     function formatMonth(dateStr) {
         if(!dateStr) return 'MMM YYYY';
@@ -282,7 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
     D.cash.addEventListener('input', calculateTotal);
     D.online.addEventListener('input', calculateTotal);
 
-    // === 6. SUBMIT ===
     form.addEventListener('submit', async () => {
         if (!currentSelectedFlatNo) {
             UX.vibrateError();
@@ -323,7 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(flatIndex > -1) flatsData[flatIndex] = { ...flatsData[flatIndex], ...fUpdates };
             receiptsData.push(inserted); 
 
-            // Trigger Success Audio & Visuals
             UX.vibrateSuccess();
             document.getElementById('snapshot-text').textContent = `Rcpt: ${inserted.receipt_no} | ${D.name.value} | Total: ₹${totalAmt}`;
             successModal.classList.add('visible');
@@ -346,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('modal-next-btn').onclick = () => {
         successModal.classList.remove('visible');
         currentSelectedFlatNo = null;
-        D.flatBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span>Search Owner, Flat, or Bldg...</span>`;
+        D.flatBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span>Search Owner, Flat, or Bldg...</span>`;
         D.name.value = ""; D.phone.value = ""; D.baseFee.value = ""; D.isRented.checked = false;
         D.cash.value = ""; D.online.value = ""; D.total.textContent = "₹0";
         D.remarks.value = ""; D.charCount.textContent = "0/50";
