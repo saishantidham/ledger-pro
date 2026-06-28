@@ -51,15 +51,44 @@
         .total-box .lbl { font-size: 16px; color: #D9531E; }
         .total-box .val { font-size: 24px; color: #D9531E; font-weight: 800; }
 
-        .qr-container { display: flex; flex-direction: column; align-items: center; margin-top: 24px; }
-        .qr-container p { font-size: 10px; color: #9CA3AF; margin-top: 8px; font-weight: 600; text-align: center; }
-
-        /* Floating Action Button (Will NOT be captured in the image) */
-        .actions { margin-top: 24px; width: 100%; max-width: 380px; display: flex; gap: 12px; }
-        .btn { 
-            flex: 1; padding: 14px; border-radius: 8px; border: none; 
-            font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 0.1s;
+        /* NEW: Side-by-Side Footer for Stamp & QR */
+        .footer-signatures {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 2px dashed #E5E7EB;
         }
+
+        /* Stamp Box (Left) */
+        .stamp-box {
+            width: 90px; height: 90px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.02);
+            border: 2px dashed #D1D5DB;
+            border-radius: 8px;
+            position: relative;
+        }
+        .stamp-box img {
+            width: 100%; height: 100%;
+            object-fit: contain;
+            position: absolute; top: 0; left: 0;
+            z-index: 2;
+        }
+        /* Fallback text if the image isn't loaded yet */
+        .stamp-placeholder {
+            font-size: 11px; font-weight: 700; color: #9CA3AF;
+            letter-spacing: 1px; z-index: 1; text-transform: uppercase;
+        }
+
+        /* QR Box (Right) */
+        .qr-container { display: flex; flex-direction: column; align-items: center; }
+        .qr-container p { font-size: 10px; color: #9CA3AF; margin-top: 8px; font-weight: 600; text-align: center; margin-bottom: 0;}
+
+        /* Floating Action Button (Will NOT be captured in the downloaded image) */
+        .actions { margin-top: 24px; width: 100%; max-width: 380px; display: flex; gap: 12px; }
+        .btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 0.1s; }
         .btn-primary { background: #F26522; color: #FFF; box-shadow: 0 4px 12px rgba(242, 101, 34, 0.3); }
         .btn-primary:active { transform: scale(0.96); }
         
@@ -91,9 +120,16 @@
         <div class="row"><span class="lbl">Online</span> <span class="val" id="r-online">₹0</span></div>
         <div class="row" style="margin-top: 16px;"><span class="lbl">Remarks</span> <span class="val" id="r-rem" style="font-weight: 400;">...</span></div>
 
-        <div class="qr-container">
-            <div id="qrcode"></div>
-            <p>Scan to verify authenticity</p>
+        <div class="footer-signatures">
+            <div class="stamp-box">
+                <img src="stamp.png" alt="Authentic Stamp" onerror="this.style.display='none'">
+                <span class="stamp-placeholder">STAMP</span>
+            </div>
+            
+            <div class="qr-container">
+                <div id="qrcode"></div>
+                <p>Scan to verify</p>
+            </div>
         </div>
     </div>
 
@@ -116,7 +152,7 @@
                     .eq('uuid', receiptId)
                     .single();
 
-                if (error || !data) throw error;
+                if (error || !data) throw error; // If RLS is dropped, this triggers for the public!
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('receipt-card').style.display = 'block';
@@ -146,14 +182,22 @@
 
             } catch (err) {
                 console.error(err);
-                document.getElementById('loading').textContent = "Failed to load receipt.";
+                // When you DROP the policies, this error message will show up for anyone scanning the QR code
+                document.getElementById('loading').innerHTML = `
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" style="margin-bottom:16px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                    <br><span style="color:#111827;">Fetching Receipt Failed</span>
+                    <br><span style="font-size:12px; font-weight:500;">Please ensure you have authorization.</span>
+                `;
             }
         });
 
         function downloadImage() {
             const card = document.getElementById('receipt-card');
             
-            // html2canvas takes a "picture" of the DOM element
             html2canvas(card, { scale: 3, backgroundColor: "#FFFFFF" }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `Receipt_${document.getElementById('r-no').textContent}.png`;
