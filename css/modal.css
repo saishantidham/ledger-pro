@@ -32,7 +32,8 @@
     padding: 1rem; border-radius: var(--radius-md);
     margin: 1.25rem 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
 }
-.mono-text { font-family: "SFMono-Regular", Consolas, monospace; font-size: var(--f-sm); color: var(--c-muted); font-weight: 600; letter-spacing: 0.02em; }
+/* Fixed Font to match the app */
+.mono-text { font-size: var(--f-sm); color: var(--c-muted); font-weight: 600; letter-spacing: 0.02em; }
 
 .btn-success { background: #16A34A; color: #FFF; border: none; padding: 0.8rem; border-radius: var(--radius-sm); font-size: var(--f-base); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: var(--transition); box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2); }
 .btn-success:active { transform: scale(0.98) translateY(0); }
