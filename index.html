@@ -14,6 +14,11 @@
 </head>
 <body>
 
+    <div id="global-loader">
+        <div class="spinner"></div>
+        <p class="text-sm font-semibold text-muted" id="loader-text">Waking up engine...</p>
+    </div>
+
     <main id="auth-view" class="view active-view">
         <div class="login-card">
             <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -39,7 +44,7 @@
         <div class="hub-wrapper">
             <header class="hub-header">
                 <div>
-                    <h2 id="greeting-text" class="hero-title">Good Evening,</h2>
+                    <h2 class="hero-title"><span class="text-gradient" id="greeting-text">Good Evening,</span></h2>
                     <p class="text-muted text-sm">Overview for <span id="financial-year">FY 26-27</span></p>
                 </div>
                 <button id="hub-settings-btn" class="icon-btn" aria-label="Settings">
@@ -61,17 +66,26 @@
                 <p class="text-center text-xs text-muted mt-md">Tap a date to begin logging session</p>
             </section>
 
-            <button id="view-reports-btn" class="btn-secondary full-width mt-lg">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="18" y="3" width="4" height="18" rx="1"></rect><rect x="10" y="8" width="4" height="13" rx="1"></rect><rect x="2" y="13" width="4" height="8" rx="1"></rect></svg>
-                <div style="text-align: left;">
-                    <div style="font-size: var(--f-base); line-height: 1.1;">View Master Report</div>
-                    <div class="text-xs text-muted" style="font-weight: 500;">Excel Generator</div>
-                </div>
-            </button>
+            <div class="grid-2 mt-lg">
+                <button id="view-reports-btn" class="btn-secondary full-width">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="18" y="3" width="4" height="18" rx="1"></rect><rect x="10" y="8" width="4" height="13" rx="1"></rect><rect x="2" y="13" width="4" height="8" rx="1"></rect></svg>
+                    <div style="text-align: left;">
+                        <div style="font-size: var(--f-base); line-height: 1.1;">Master Report</div>
+                        <div class="text-xs text-muted" style="font-weight: 500;">Excel Gen</div>
+                    </div>
+                </button>
+                <button id="view-recent-btn" class="btn-secondary full-width">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <div style="text-align: left;">
+                        <div style="font-size: var(--f-base); line-height: 1.1;">Recent Logs</div>
+                        <div class="text-xs text-muted" style="font-weight: 500;">Past Entries</div>
+                    </div>
+                </button>
+            </div>
 
             <div class="flex-spacer"></div>
 
-            <footer class="stats-dock">
+            <footer class="stats-dock mt-lg">
                 <div class="stat-box">
                     <span class="stat-val" id="stat-today">₹0</span>
                     <span class="stat-lbl">View Date Total</span>
@@ -85,7 +99,7 @@
         </div>
     </main>
 
-    <main id="workspace-view" class="view hidden-view screen-lock" style="overflow-y: auto;">
+    <main id="workspace-view" class="view hidden-view">
         <header class="workspace-header">
             <button id="back-to-hub-btn" class="icon-btn">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -100,9 +114,9 @@
             </div>
         </header>
 
-        <section class="form-engine">
-            <form id="receipt-form" onsubmit="event.preventDefault();" class="compact-form">
-                
+        <form id="receipt-form" onsubmit="event.preventDefault();" class="compact-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+            
+            <section class="form-engine">
                 <div class="grid-2">
                     <div class="input-wrap">
                         <label>Receipt No.</label>
@@ -171,18 +185,19 @@
                 </div>
                 <div class="total-bar">Total: <span id="total-amount-display">₹0</span></div>
 
-                <div class="input-wrap mt-md">
+                <div class="input-wrap mt-md pb-lg">
                     <div class="flex-between">
                         <label>Remarks</label>
                         <span id="char-count" class="text-xs text-muted font-semibold">0/50</span>
                     </div>
                     <input type="text" id="remarks" class="compact-input" placeholder="Optional notes..." maxlength="50">
                 </div>
-
-                <div class="flex-spacer"></div>
-                <button type="submit" id="submit-receipt-btn" class="btn-primary full-width mt-lg">Log Entry</button>
-            </form>
-        </section>
+            </section>
+            
+            <footer class="form-footer-pinned">
+                <button type="submit" id="submit-receipt-btn" class="btn-primary full-width">Log Entry</button>
+            </footer>
+        </form>
     </main>
 
     <div id="flat-search-modal" class="bottom-sheet-overlay hidden">
@@ -205,9 +220,15 @@
                 <h3>Settings</h3>
                 <button id="close-settings-btn" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
-            <div style="padding-bottom: 2rem;">
-                <button id="logout-btn" class="btn-secondary full-width mt-md" style="color: var(--c-error); border-color: var(--c-error);">Logout Session</button>
+            <div class="flex-between mt-md">
+                <span class="font-semibold">Haptic Feedback (Vibration)</span>
+                <label class="switch-mini"><input type="checkbox" id="toggle-haptics" checked><span class="slider-mini"></span></label>
             </div>
+            <div class="flex-between mt-md mb-lg">
+                <span class="font-semibold">App Sounds</span>
+                <label class="switch-mini"><input type="checkbox" id="toggle-sounds" checked><span class="slider-mini"></span></label>
+            </div>
+            <button id="logout-btn" class="btn-secondary full-width" style="color: var(--c-error); border-color: var(--c-error);">Logout Session</button>
         </div>
     </div>
 
