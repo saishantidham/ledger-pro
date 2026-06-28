@@ -10,7 +10,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 
     <link rel="stylesheet" href="css/theme.css">
@@ -19,65 +18,48 @@
     <link rel="stylesheet" href="css/modal.css">
 
     <style>
-        /* Zero-Scroll Enforcement */
         #workspace-view {
-            height: 100dvh !important;
-            display: flex; flex-direction: column;
-            overflow: hidden !important; 
-            background: var(--c-bg);
-            transition: height 0.1s ease-out; 
+            height: 100dvh !important; display: flex; flex-direction: column;
+            overflow: hidden !important; background: var(--c-bg); transition: height 0.1s ease-out; 
         }
         
         .workspace-header {
-            padding: 10px 16px; 
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 10px 16px; border-bottom: 1px solid rgba(0,0,0,0.05);
             background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             flex-shrink: 0; z-index: 10;
         }
 
-        /* Denser, strictly bounded form */
         .ultra-compact-form {
             flex: 1; display: flex; flex-direction: column;
-            padding: 12px 16px; 
-            padding-bottom: env(safe-area-inset-bottom, 12px);
-            gap: 10px; 
-            justify-content: space-between; 
-            overflow-y: auto; overflow-x: hidden;
-            background: var(--c-surface);
-            border-radius: 20px 20px 0 0;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
-            margin-top: 2px; scroll-behavior: smooth; scrollbar-width: none; 
+            padding: 12px 16px; padding-bottom: env(safe-area-inset-bottom, 12px); gap: 10px; 
+            justify-content: space-between; overflow-y: auto; overflow-x: hidden;
+            background: var(--c-surface); border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.02); margin-top: 2px; scroll-behavior: smooth; scrollbar-width: none; 
         }
         .ultra-compact-form::-webkit-scrollbar { display: none; }
 
         .uc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }
         .uc-row-3 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
         
-        .uc-label { 
-            font-size: 11px; font-weight: 600; color: var(--c-muted); 
-            text-transform: uppercase; letter-spacing: 0.5px;
-            margin-bottom: 4px; display: flex; justify-content: space-between; align-items: flex-end;
-        }
+        .uc-label { font-size: 11px; font-weight: 600; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: flex-end; }
         
         .uc-input { 
-            width: 100%; height: 36px; padding: 0 10px; 
-            font-size: 13px; font-weight: 500;
-            border: 1px solid rgba(0,0,0,0.08); border-radius: 6px; 
-            background: #FAFAFA; color: var(--c-text); 
+            width: 100%; height: 36px; padding: 0 10px; font-size: 13px; font-weight: 500;
+            border: 1px solid rgba(0,0,0,0.08); border-radius: 6px; background: #FAFAFA; color: var(--c-text); 
             display: flex; align-items: center; transition: all 0.2s ease;
         }
         .uc-input:focus-within { border-color: var(--c-saffron); background: #FFF; box-shadow: 0 0 0 2px rgba(242, 101, 34, 0.1); outline: none; }
         .uc-input:disabled { opacity: 0.6; cursor: not-allowed; }
         
-        input[type="date"]::-webkit-calendar-picker-indicator, input[type="month"]::-webkit-calendar-picker-indicator {
-            opacity: 0.5; cursor: pointer; padding-left: 8px;
-        }
+        input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; padding-left: 8px; }
 
+        /* Fake Input specific fix for short months */
+        .relative { position: relative; }
+        .hidden-native-picker { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
+        
         .uc-search-btn { 
-            width: 100%; height: 38px; background: rgba(0,0,0,0.02); 
-            border: 1px dashed rgba(0,0,0,0.15); border-radius: 6px; 
-            font-size: 13px; color: var(--c-text); font-weight: 500; 
-            text-align: left; padding: 0 12px; display: flex; 
+            width: 100%; height: 38px; background: rgba(0,0,0,0.02); border: 1px dashed rgba(0,0,0,0.15); border-radius: 6px; 
+            font-size: 13px; color: var(--c-text); font-weight: 500; text-align: left; padding: 0 12px; display: flex; 
             align-items: center; justify-content: center; gap: 8px; transition: background 0.2s;
         }
         .uc-search-btn:active { background: rgba(0,0,0,0.05); }
@@ -94,23 +76,17 @@
         .calc-amount { font-size: 14px; font-weight: 700; color: var(--c-saffron-dark); line-height: 1;}
 
         .uc-footer-dock {
-            background: rgba(242, 101, 34, 0.05);
-            border: 1px solid rgba(242, 101, 34, 0.15);
-            border-radius: 12px; padding: 12px 14px;
-            display: flex; flex-direction: column; gap: 8px;
-            margin-top: auto; /* THIS FIXES THE WHITE BOX GAP */
-            margin-bottom: env(safe-area-inset-bottom, 0px);
+            background: rgba(242, 101, 34, 0.05); border: 1px solid rgba(242, 101, 34, 0.15);
+            border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+            margin-top: auto; margin-bottom: env(safe-area-inset-bottom, 0px);
         }
         .uc-total-val { font-size: 22px; font-weight: 700; color: var(--c-text); line-height: 1; text-align: right;}
         
         .uc-submit-btn { 
-            width: 100%; height: 44px; border-radius: 8px; 
-            background: linear-gradient(135deg, var(--c-saffron), var(--c-saffron-dark)); 
-            color: white; font-weight: 600; font-size: 15px; letter-spacing: 0.5px;
-            border: none; box-shadow: 0 4px 15px rgba(242, 101, 34, 0.3); transition: transform 0.1s ease;
+            width: 100%; height: 44px; border-radius: 8px; background: linear-gradient(135deg, var(--c-saffron), var(--c-saffron-dark)); 
+            color: white; font-weight: 600; font-size: 15px; letter-spacing: 0.5px; border: none; box-shadow: 0 4px 15px rgba(242, 101, 34, 0.3); transition: transform 0.1s ease;
         }
         .uc-submit-btn:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(242, 101, 34, 0.3); }
-
         .action-tray { display: flex; gap: 6px; margin-top: 8px; }
         .btn-micro { background: var(--c-bg); border: 1px solid var(--c-border); border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: 500; color: var(--c-text); display: flex; align-items: center; gap: 4px; }
     </style>
@@ -143,7 +119,7 @@
                     <h2 class="hero-title"><span class="text-gradient" id="greeting-text">Good Evening,</span></h2>
                     <p class="text-muted text-sm font-semibold">Overview for <span id="financial-year">FY 26-27</span></p>
                 </div>
-                <button id="hub-settings-btn" class="icon-btn" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+                <button id="hub-settings-btn" class="icon-btn" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
             </header>
 
             <section class="calendar-card mt-sm">
@@ -233,13 +209,15 @@
             </div>
 
             <div class="uc-row-3">
-                <div>
+                <div class="relative">
                     <label class="uc-label">From Month</label>
-                    <input type="month" id="month-from" class="uc-input" style="padding: 0 4px;" required>
+                    <div id="display-month-from" class="uc-input text-muted" style="padding: 0 8px;">MMM YYYY</div>
+                    <input type="month" id="month-from" class="hidden-native-picker" required>
                 </div>
-                <div>
+                <div class="relative">
                     <label class="uc-label">To Month</label>
-                    <input type="month" id="month-to" class="uc-input" style="padding: 0 4px;" required>
+                    <div id="display-month-to" class="uc-input text-muted" style="padding: 0 8px;">MMM YYYY</div>
+                    <input type="month" id="month-to" class="hidden-native-picker" required>
                 </div>
                 <div class="uc-month-calc-box">
                     <div id="months-calculated" class="calc-label">0 Months</div>
@@ -293,22 +271,23 @@
                 <h3>Settings</h3>
                 <button id="close-settings-btn" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
-            <div class="flex-between mt-sm">
-                <span class="font-semibold">Haptic Feedback</span>
+            
+            <div class="flex-between mt-lg">
+                <span class="font-semibold">Haptic Feedback (Vibration)</span>
                 <label class="switch-mini"><input type="checkbox" id="toggle-haptics" checked><span class="slider-mini"></span></label>
             </div>
-            <div class="flex-between mt-md">
+            <div class="flex-between mt-lg">
                 <span class="font-semibold">App Sounds</span>
                 <label class="switch-mini"><input type="checkbox" id="toggle-sounds" checked><span class="slider-mini"></span></label>
             </div>
             
-            <div class="mt-md mb-lg">
+            <div class="mt-lg mb-lg">
                 <span class="font-semibold text-sm">WhatsApp Default Message</span>
-                <textarea id="wa-default-msg" class="uc-input mt-xs" style="height: 60px; padding: 8px; resize: none; font-size: 12px;" placeholder="Hello {name}, payment of {amount} for {flat} is received."></textarea>
-                <p class="text-xs text-muted mt-xs" style="font-weight: 500;">Tags: {name}, {amount}, {flat}, {rcpt}</p>
+                <textarea id="wa-default-msg" class="uc-input mt-xs" style="height: 70px; padding: 10px; resize: none; font-size: 12px; line-height: 1.4;"></textarea>
+                <p class="text-xs text-muted mt-sm" style="font-weight: 500;">Tags: {name}, {amount}, {flat}, {rcpt}, {link}</p>
             </div>
-
-            <button id="logout-btn" class="btn-secondary full-width" style="color: var(--c-error); border-color: var(--c-error);">Logout Session</button>
+            
+            <button id="logout-btn" class="btn-secondary full-width mt-md" style="color: var(--c-error); border-color: var(--c-error);">Logout Session</button>
         </div>
     </div>
 
