@@ -1,1 +1,166 @@
-# Isolated HTML view strictly for html2canvas generation
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt | Ledger Pro</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    
+    <script src="qrcode.min.js"></script>
+    <script src="html2canvas.min.js"></script>
+
+    <style>
+        body { 
+            margin: 0; padding: 20px; 
+            background: #F3F4F6; 
+            font-family: 'Inter', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh;
+        }
+
+        /* The Printable Card */
+        #receipt-card {
+            background: #FFFFFF;
+            width: 100%; max-width: 380px;
+            padding: 30px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border-top: 8px solid #F26522;
+            position: relative;
+        }
+
+        .header { text-align: center; margin-bottom: 24px; border-bottom: 2px dashed #E5E7EB; padding-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 22px; font-weight: 800; color: #111827; }
+        .header p { margin: 4px 0 0 0; font-size: 12px; color: #6B7280; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+
+        .row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
+        .lbl { color: #6B7280; font-weight: 600; }
+        .val { color: #111827; font-weight: 700; text-align: right; }
+
+        .total-box {
+            background: rgba(242, 101, 34, 0.05);
+            border: 1px solid rgba(242, 101, 34, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin: 20px 0;
+        }
+        .total-box .lbl { font-size: 16px; color: #D9531E; }
+        .total-box .val { font-size: 24px; color: #D9531E; font-weight: 800; }
+
+        .qr-container { display: flex; flex-direction: column; align-items: center; margin-top: 24px; }
+        .qr-container p { font-size: 10px; color: #9CA3AF; margin-top: 8px; font-weight: 600; text-align: center; }
+
+        /* Floating Action Button (Will NOT be captured in the image) */
+        .actions { margin-top: 24px; width: 100%; max-width: 380px; display: flex; gap: 12px; }
+        .btn { 
+            flex: 1; padding: 14px; border-radius: 8px; border: none; 
+            font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 0.1s;
+        }
+        .btn-primary { background: #F26522; color: #FFF; box-shadow: 0 4px 12px rgba(242, 101, 34, 0.3); }
+        .btn-primary:active { transform: scale(0.96); }
+        
+        .loader { text-align: center; font-weight: 600; color: #6B7280; margin-top: 50px; }
+    </style>
+</head>
+<body>
+
+    <div id="loading" class="loader">Fetching Receipt...</div>
+
+    <div id="receipt-card" style="display: none;">
+        <div class="header">
+            <h1>Ledger Pro</h1>
+            <p>Maintenance Receipt</p>
+        </div>
+
+        <div class="row"><span class="lbl">Receipt No.</span> <span class="val" id="r-no">...</span></div>
+        <div class="row"><span class="lbl">Date</span> <span class="val" id="r-date">...</span></div>
+        <div class="row"><span class="lbl">Flat No.</span> <span class="val" id="r-flat">...</span></div>
+        <div class="row"><span class="lbl">Received From</span> <span class="val" id="r-name">...</span></div>
+        <div class="row"><span class="lbl">Months Covered</span> <span class="val" id="r-months">...</span></div>
+        
+        <div class="total-box">
+            <span class="lbl">Total Paid</span>
+            <span class="val" id="r-total">₹0</span>
+        </div>
+
+        <div class="row"><span class="lbl">Cash</span> <span class="val" id="r-cash">₹0</span></div>
+        <div class="row"><span class="lbl">Online</span> <span class="val" id="r-online">₹0</span></div>
+        <div class="row" style="margin-top: 16px;"><span class="lbl">Remarks</span> <span class="val" id="r-rem" style="font-weight: 400;">...</span></div>
+
+        <div class="qr-container">
+            <div id="qrcode"></div>
+            <p>Scan to verify authenticity</p>
+        </div>
+    </div>
+
+    <div class="actions" id="actions-dock" style="display: none;">
+        <button class="btn btn-primary" onclick="downloadImage()">Download / Share Image</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const receiptId = urlParams.get('id');
+
+            if (!receiptId) return alert("Invalid Receipt Link");
+
+            try {
+                // Fetch Receipt AND link the Flat Owner Data automatically
+                const { data, error } = await supabaseClient
+                    .from('receipts')
+                    .select('*, flats(owner_name, is_rented)')
+                    .eq('uuid', receiptId)
+                    .single();
+
+                if (error || !data) throw error;
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('receipt-card').style.display = 'block';
+                document.getElementById('actions-dock').style.display = 'flex';
+
+                // Populate UI
+                document.getElementById('r-no').textContent = data.receipt_no;
+                document.getElementById('r-date').textContent = new Date(data.date).toLocaleDateString('en-GB');
+                document.getElementById('r-flat').textContent = data.flat_no;
+                
+                const ownerName = data.flats ? data.flats.owner_name : 'Unknown';
+                document.getElementById('r-name').textContent = data.flats && data.flats.is_rented ? `(R) ${ownerName.replace(/^\(R\)\s*/, '')}` : ownerName;
+                
+                document.getElementById('r-months').textContent = data.months_covered;
+                document.getElementById('r-cash').textContent = data.cash_amount ? `₹${data.cash_amount}` : '-';
+                document.getElementById('r-online').textContent = data.online_amount ? `₹${data.online_amount}` : '-';
+                document.getElementById('r-total').textContent = `₹${data.total_amount}`;
+                document.getElementById('r-rem').textContent = data.remarks || 'None';
+
+                // Generate secure verification QR Code pointing to this URL
+                new QRCode(document.getElementById("qrcode"), {
+                    text: window.location.href,
+                    width: 90, height: 90,
+                    colorDark : "#111827", colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.L
+                });
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').textContent = "Failed to load receipt.";
+            }
+        });
+
+        function downloadImage() {
+            const card = document.getElementById('receipt-card');
+            
+            // html2canvas takes a "picture" of the DOM element
+            html2canvas(card, { scale: 3, backgroundColor: "#FFFFFF" }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Receipt_${document.getElementById('r-no').textContent}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
