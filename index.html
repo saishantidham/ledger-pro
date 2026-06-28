@@ -96,9 +96,10 @@
         .uc-footer-dock {
             background: rgba(242, 101, 34, 0.05);
             border: 1px solid rgba(242, 101, 34, 0.15);
-            border-radius: 12px; padding: 10px 14px;
+            border-radius: 12px; padding: 12px 14px;
             display: flex; flex-direction: column; gap: 8px;
-            margin-top: 4px;
+            margin-top: auto; /* THIS FIXES THE WHITE BOX GAP */
+            margin-bottom: env(safe-area-inset-bottom, 0px);
         }
         .uc-total-val { font-size: 22px; font-weight: 700; color: var(--c-text); line-height: 1; text-align: right;}
         
@@ -292,14 +293,21 @@
                 <h3>Settings</h3>
                 <button id="close-settings-btn" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
-            <div class="flex-between mt-md">
-                <span class="font-semibold">Haptic Feedback (Vibration)</span>
+            <div class="flex-between mt-sm">
+                <span class="font-semibold">Haptic Feedback</span>
                 <label class="switch-mini"><input type="checkbox" id="toggle-haptics" checked><span class="slider-mini"></span></label>
             </div>
-            <div class="flex-between mt-md mb-lg">
+            <div class="flex-between mt-md">
                 <span class="font-semibold">App Sounds</span>
                 <label class="switch-mini"><input type="checkbox" id="toggle-sounds" checked><span class="slider-mini"></span></label>
             </div>
+            
+            <div class="mt-md mb-lg">
+                <span class="font-semibold text-sm">WhatsApp Default Message</span>
+                <textarea id="wa-default-msg" class="uc-input mt-xs" style="height: 60px; padding: 8px; resize: none; font-size: 12px;" placeholder="Hello {name}, payment of {amount} for {flat} is received."></textarea>
+                <p class="text-xs text-muted mt-xs" style="font-weight: 500;">Tags: {name}, {amount}, {flat}, {rcpt}</p>
+            </div>
+
             <button id="logout-btn" class="btn-secondary full-width" style="color: var(--c-error); border-color: var(--c-error);">Logout Session</button>
         </div>
     </div>
