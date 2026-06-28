@@ -13,59 +13,113 @@
     <link rel="stylesheet" href="css/modal.css">
 
     <style>
-        /* Lock the workspace to exactly the device height, no overflow allowed */
+        /* Lock workspace to exact screen height */
         #workspace-view {
             height: 100dvh !important;
             display: flex;
             flex-direction: column;
             overflow: hidden !important; 
+            background: var(--c-bg);
         }
         
-        /* Make the header slightly thinner to save space */
+        /* Header styling */
         .workspace-header {
-            padding: 8px 12px; 
-            border-bottom: 1px solid var(--c-border);
+            padding: 8px 16px; 
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            background: var(--c-surface);
             flex-shrink: 0;
+            z-index: 10;
         }
 
-        /* The engine uses flex to evenly space rows, filling the screen without scrolling */
+        /* The Engine: Flexbox evenly distributes the space */
         .ultra-compact-form {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 8px 12px 12px 12px;
-            gap: 6px; /* Ultra tight gap between rows */
+            padding: 16px 20px; /* Increased side padding for premium feel */
+            padding-bottom: env(safe-area-inset-bottom, 16px); /* iPhone home bar safety */
+            gap: 12px; /* Increased gap to utilize available vertical space */
             justify-content: space-between; 
             overflow: hidden;
+            background: var(--c-surface);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
+            margin-top: 4px;
         }
 
-        /* Custom Grids for compressing elements onto single lines */
-        .uc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; }
-        .uc-row-3 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
+        /* Responsive Grid Rows */
+        .uc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
+        .uc-row-3 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
         
-        /* Tiny labels to save vertical pixels */
-        .uc-label { font-size: 10px; font-weight: 700; color: var(--c-muted); text-transform: uppercase; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: flex-end;}
+        /* Premium Typography for Labels */
+        .uc-label { 
+            font-size: 11px; 
+            font-weight: 700; 
+            color: var(--c-muted); 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            margin-bottom: 6px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end;
+        }
         
-        /* Squished inputs (36px height instead of standard 48px) */
-        .uc-input { width: 100%; height: 36px; padding: 0 8px; font-size: 14px; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-surface); color: var(--c-text); display: flex; align-items: center;}
+        /* Professional Input Sizing (Taller & cleaner) */
+        .uc-input { 
+            width: 100%; 
+            height: 42px; /* Touch-friendly height */
+            padding: 0 12px; 
+            font-size: 14px; 
+            border: 1px solid rgba(0,0,0,0.08); 
+            border-radius: 8px; 
+            background: #FAFAFA; 
+            color: var(--c-text); 
+            display: flex; 
+            align-items: center;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.01);
+            transition: all 0.2s ease;
+        }
+        .uc-input:focus-within { border-color: var(--c-saffron); background: #FFF; box-shadow: 0 0 0 3px rgba(242, 101, 34, 0.1); }
         
-        /* Compact search button */
-        .uc-search-btn { width: 100%; height: 36px; background: var(--c-bg); border: 1px dashed var(--c-border); border-radius: 6px; font-size: 12px; color: var(--c-muted); font-weight: 600; text-align: left; padding: 0 10px; display: flex; align-items: center; gap: 6px; }
+        /* Search Button Override */
+        .uc-search-btn { 
+            width: 100%; height: 42px; background: rgba(0,0,0,0.02); 
+            border: 1px dashed rgba(0,0,0,0.15); border-radius: 8px; 
+            font-size: 13px; color: var(--c-muted); font-weight: 600; 
+            text-align: left; padding: 0 12px; display: flex; 
+            align-items: center; gap: 8px; transition: background 0.2s;
+        }
+        .uc-search-btn:active { background: rgba(0,0,0,0.05); }
         
-        /* Compact Checkbox */
-        .uc-checkbox-wrap { display: flex; align-items: center; gap: 6px; height: 36px; cursor: pointer; }
+        /* Rented Checkbox Premium Alignment */
+        .uc-checkbox-wrap { display: flex; align-items: center; gap: 8px; height: 42px; cursor: pointer; }
         .uc-checkbox-wrap input { display: none; }
-        .uc-checkbox-box { width: 18px; height: 18px; border: 2px solid var(--c-border); border-radius: 4px; position: relative; }
+        .uc-checkbox-box { width: 20px; height: 20px; border: 2px solid rgba(0,0,0,0.15); border-radius: 6px; position: relative; transition: all 0.2s; background: #FAFAFA;}
         .uc-checkbox-wrap input:checked + .uc-checkbox-box { background: var(--c-saffron); border-color: var(--c-saffron); }
-        .uc-checkbox-wrap input:checked + .uc-checkbox-box::after { content: '✓'; color: #fff; position: absolute; font-size: 12px; left: 2px; top: -1px; font-weight: bold; }
+        .uc-checkbox-wrap input:checked + .uc-checkbox-box::after { content: '✓'; color: #fff; position: absolute; font-size: 14px; left: 3px; top: -1px; font-weight: bold; }
         
-        /* Tight Total Display area */
-        .uc-total-display { text-align: right; line-height: 1.1; padding-bottom: 4px; }
-        .uc-total-lbl { font-size: 10px; color: var(--c-muted); font-weight: 700; text-transform: uppercase;}
-        .uc-total-val { font-size: 18px; font-weight: 800; color: var(--c-saffron-dark); }
+        /* The "Touch of God" Calculator Display */
+        .uc-month-calc-box {
+            display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
+            height: 42px; padding-left: 4px;
+        }
+        .calc-label { font-size: 11px; font-weight: 700; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;}
+        .calc-amount { font-size: 15px; font-weight: 800; color: var(--c-saffron-dark); line-height: 1;}
+
+        /* Final Total Block */
+        .uc-total-display { text-align: right; line-height: 1.1; padding-bottom: 4px; display: flex; flex-direction: column; justify-content: flex-end; height: 42px;}
+        .uc-total-lbl { font-size: 11px; color: var(--c-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;}
+        .uc-total-val { font-size: 20px; font-weight: 800; color: var(--c-text); }
         
-        /* Slightly thinner submit button */
-        .uc-submit-btn { width: 100%; height: 46px; border-radius: 8px; background: linear-gradient(135deg, var(--c-saffron), var(--c-saffron-dark)); color: white; font-weight: 700; font-size: 16px; border: none; box-shadow: 0 4px 12px rgba(242, 101, 34, 0.25); flex-shrink: 0;}
+        /* Robust Log Button */
+        .uc-submit-btn { 
+            width: 100%; height: 50px; border-radius: 10px; 
+            background: linear-gradient(135deg, var(--c-saffron), var(--c-saffron-dark)); 
+            color: white; font-weight: 700; font-size: 16px; letter-spacing: 0.5px;
+            border: none; box-shadow: 0 4px 15px rgba(242, 101, 34, 0.3); 
+            flex-shrink: 0; margin-top: 4px;
+        }
+        .uc-submit-btn:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(242, 101, 34, 0.3); }
     </style>
 </head>
 <body>
@@ -117,8 +171,7 @@
                 <div class="calendar-grid-days">
                     <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                 </div>
-                <div id="calendar-grid" class="calendar-grid">
-                    </div>
+                <div id="calendar-grid" class="calendar-grid"></div>
                 <p class="text-center text-xs text-muted mt-md">Tap a date to begin logging session</p>
             </section>
 
@@ -185,17 +238,17 @@
             </div>
 
             <button type="button" id="open-flat-search" class="uc-search-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <span>Search Owner, Flat, or Bldg...</span>
             </button>
 
             <div class="uc-row">
                 <div>
                     <label class="uc-label">Owner Name</label>
-                    <input type="text" id="owner-name" class="uc-input" style="font-weight: bold;" required>
+                    <input type="text" id="owner-name" class="uc-input" style="font-weight: 700;" required>
                 </div>
                 <div>
-                    <label class="uc-label">WhatsApp</label>
+                    <label class="uc-label">WhatsApp No.</label>
                     <input type="tel" id="owner-phone" class="uc-input" required>
                 </div>
             </div>
@@ -212,27 +265,31 @@
                 </label>
             </div>
 
-            <div class="uc-row">
+            <div class="uc-row-3">
                 <div class="relative">
                     <label class="uc-label">From Month</label>
                     <div id="display-month-from" class="uc-input">MMM YYYY</div>
                     <input type="month" id="month-from" class="hidden-native-picker" required>
                 </div>
                 <div class="relative">
-                    <label class="uc-label">To Month <span id="months-calculated" style="color:var(--c-success);">0M</span></label>
+                    <label class="uc-label">To Month</label>
                     <div id="display-month-to" class="uc-input">MMM YYYY</div>
                     <input type="month" id="month-to" class="hidden-native-picker" required>
+                </div>
+                <div class="uc-month-calc-box">
+                    <div id="months-calculated" class="calc-label">0 Months</div>
+                    <div id="calculated-base-total" class="calc-amount">₹0</div>
                 </div>
             </div>
 
             <div class="uc-row-3">
                 <div>
                     <label class="uc-label">Cash</label>
-                    <input type="number" id="cash-amount" class="uc-input" style="font-weight: bold;" min="0">
+                    <input type="number" id="cash-amount" class="uc-input" style="font-weight: 700;" min="0">
                 </div>
                 <div>
                     <label class="uc-label">Online</label>
-                    <input type="number" id="online-amount" class="uc-input" style="font-weight: bold;" min="0">
+                    <input type="number" id="online-amount" class="uc-input" style="font-weight: 700;" min="0">
                 </div>
                 <div class="uc-total-display">
                     <div class="uc-total-lbl">Total</div>
@@ -241,7 +298,7 @@
             </div>
 
             <div>
-                <label class="uc-label"><span>Remarks</span> <span id="char-count">0/50</span></label>
+                <label class="uc-label"><span>Remarks</span> <span id="char-count" style="text-transform:none;">0/50</span></label>
                 <input type="text" id="remarks" class="uc-input" placeholder="Optional notes..." maxlength="50">
             </div>
 
@@ -257,7 +314,7 @@
             </div>
             <div class="relative search-box">
                 <input type="text" id="flat-search-input" class="uc-input" placeholder="Search A-101, Ramesh..." style="padding-left: 2.5rem;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-muted)" stroke-width="2" style="position: absolute; left: 12px; top: 9px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-muted)" stroke-width="2" style="position: absolute; left: 12px; top: 12px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </div>
             <ul id="flat-list" class="virtual-list"></ul>
         </div>
@@ -287,8 +344,7 @@
                 <h3>Recent Entries</h3>
                 <button id="close-recent-btn" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
-            <ul id="recent-logs-list" class="virtual-list">
-                </ul>
+            <ul id="recent-logs-list" class="virtual-list"></ul>
         </div>
     </div>
 
@@ -318,5 +374,38 @@
     <script src="js/db.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/engine.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mFrom = document.getElementById('month-from');
+            const mTo = document.getElementById('month-to');
+            const baseFee = document.getElementById('base-fee');
+            const calcLabel = document.getElementById('months-calculated');
+            const calcAmount = document.getElementById('calculated-base-total');
+
+            function updateBaseFeeCalculation() {
+                if(!mFrom.value || !mTo.value) return;
+                
+                const d1 = new Date(mFrom.value + '-01'); 
+                const d2 = new Date(mTo.value + '-01');
+                
+                let monthsCount = (d2.getFullYear() - d1.getFullYear()) * 12 - d1.getMonth() + d2.getMonth() + 1;
+                let fee = parseFloat(baseFee.value) || 0;
+                
+                if (monthsCount > 0) {
+                    calcLabel.textContent = monthsCount + (monthsCount === 1 ? ' Month' : ' Months');
+                    calcAmount.textContent = '₹' + (monthsCount * fee);
+                } else {
+                    calcLabel.textContent = 'Error';
+                    calcAmount.textContent = '₹0';
+                }
+            }
+            
+            // Attach listeners to update dynamically without touching engine.js
+            mFrom.addEventListener('change', updateBaseFeeCalculation);
+            mTo.addEventListener('change', updateBaseFeeCalculation);
+            baseFee.addEventListener('input', updateBaseFeeCalculation);
+        });
+    </script>
 </body>
 </html>
