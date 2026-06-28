@@ -116,6 +116,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentSelectedFlatNo = null;
 
+    // === WHATSAPP TEMPLATE ENGINE ===
+    const waMsgInput = document.getElementById('wa-default-msg');
+    const defaultTemplate = "Hello {name},\nYour maintenance payment of ₹{amount} for Flat {flat} (Rcpt: {rcpt}) has been received successfully.\nThank you!";
+    
+    if(waMsgInput) {
+        waMsgInput.value = localStorage.getItem('waTemplate') || defaultTemplate;
+        waMsgInput.addEventListener('input', (e) => localStorage.setItem('waTemplate', e.target.value));
+    }
+
+    function buildWhatsAppMsg(name, amount, flat, rcpt) {
+        let template = localStorage.getItem('waTemplate') || defaultTemplate;
+        return encodeURIComponent(
+            template.replace('{name}', name)
+                    .replace('{amount}', amount)
+                    .replace('{flat}', flat)
+                    .replace('{rcpt}', rcpt)
+        );
+    }
+
     // === EXPORTED ENGINE STARTUP ===
     window.loadHubData = async function() {
         const loaderText = document.getElementById('loader-text');
@@ -211,7 +230,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.shareRecent = function(flat, amount, rcpt) {
         UX.playClick();
-        const msg = `Hello,%0AYour maintenance payment of ₹${amount} for Flat ${flat} (Rcpt: ${rcpt}) has been received successfully.%0AThank you!`;
+        const flatData = flatsData.find(f => f.flat_no === flat);
+        const ownerName = flatData ? flatData.owner_name.replace(/^\(R\)\s*/, '') : 'Resident';
+        const msg = buildWhatsAppMsg(ownerName, amount, flat, rcpt);
         window.open(`https://wa.me/?text=${msg}`, '_blank');
     };
 
@@ -365,13 +386,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const inserted = await DB.insertReceipt(rPayload);
             receiptsData.push(inserted); 
 
-            // Trigger Success Audio & Visuals
             UX.vibrateSuccess();
             document.getElementById('snapshot-text').textContent = `Rcpt: ${inserted.receipt_no} | ${D.name.value} | ₹${totalAmt}`;
             successModal.classList.add('visible');
             
             const cleanName = D.name.value.replace(/^\(R\)\s*/, '');
-            const msg = `Hello ${cleanName},%0AYour maintenance payment of ₹${totalAmt} for Flat ${currentSelectedFlatNo} has been received successfully.%0AThank you!`;
+            const msg = buildWhatsAppMsg(cleanName, totalAmt, currentSelectedFlatNo, inserted.receipt_no);
             
             document.getElementById('btn-whatsapp-share').onclick = () => window.open(`https://wa.me/${D.phone.value}?text=${msg}`, '_blank');
             document.getElementById('btn-mail-share').onclick = () => window.open(`mailto:?subject=Maintenance Receipt ${inserted.receipt_no}&body=${msg}`, '_blank');
