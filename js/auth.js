@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsSheet = document.getElementById('settings-sheet');
     const logoutBtn = document.getElementById('logout-btn');
 
-    // Startup Check
     checkUser();
 
     async function checkUser() {
@@ -26,10 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    loginForm.addEventListener('submit', async (e) => {
+    loginForm?.addEventListener('submit', async (e) => {
         e.preventDefault(); 
-        loginBtn.textContent = 'Authenticating...';
-        errorText.classList.add('hidden');
+        if(loginBtn) loginBtn.textContent = 'Authenticating...';
+        if(errorText) errorText.classList.add('hidden');
 
         const { error } = await supabaseClient.auth.signInWithPassword({
             email: emailInput.value,
@@ -37,47 +36,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (error) {
-            errorText.textContent = 'Invalid credentials.';
-            errorText.classList.remove('hidden');
-            loginBtn.textContent = 'Sign In';
+            if(errorText) {
+                errorText.textContent = 'Invalid credentials.';
+                errorText.classList.remove('hidden');
+            }
+            if(loginBtn) loginBtn.textContent = 'Sign In';
             if(window.UX) window.UX.vibrateError();
         } else {
-            loginBtn.textContent = 'Sign In';
+            if(loginBtn) loginBtn.textContent = 'Sign In';
             if(window.UX) window.UX.playClick();
             transitionToHub();
         }
     });
 
-    logoutBtn.addEventListener('click', async () => {
+    logoutBtn?.addEventListener('click', async () => {
         await supabaseClient.auth.signOut();
-        emailInput.value = ''; passwordInput.value = '';
-        settingsSheet.classList.add('hidden');
+        if(emailInput) emailInput.value = ''; 
+        if(passwordInput) passwordInput.value = '';
+        if(settingsSheet) settingsSheet.classList.add('hidden');
         
-        hubView.classList.replace('active-view', 'hidden-view');
-        authView.classList.replace('hidden-view', 'active-view');
+        if(hubView) hubView.classList.replace('active-view', 'hidden-view');
+        if(authView) authView.classList.replace('hidden-view', 'active-view');
     });
 
-    // Settings Toggle Logic
-    settingsBtn.addEventListener('click', () => settingsSheet.classList.remove('hidden'));
-    closeSettingsBtn.addEventListener('click', () => settingsSheet.classList.add('hidden'));
+    // Bulletproofed event listeners to prevent null crashes
+    settingsBtn?.addEventListener('click', () => {
+        if(settingsSheet) settingsSheet.classList.remove('hidden');
+    });
+    
+    closeSettingsBtn?.addEventListener('click', () => {
+        if(settingsSheet) settingsSheet.classList.add('hidden');
+    });
 
     async function transitionToHub() {
-        authView.classList.replace('active-view', 'hidden-view');
-        hubView.classList.replace('hidden-view', 'active-view');
+        if(authView) authView.classList.replace('active-view', 'hidden-view');
+        if(hubView) hubView.classList.replace('hidden-view', 'active-view');
         setDynamicGreeting();
         
-        // Let the UI breathe, then load heavy data
         setTimeout(async () => {
             if(typeof window.loadHubData === 'function') {
-                await window.loadHubData(); // Triggers engine.js
+                await window.loadHubData();
             }
             hideLoader();
         }, 100);
     }
 
     function hideLoader() {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.style.display = 'none', 400);
+        if(loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 400);
+        }
     }
 
     function setDynamicGreeting() {
