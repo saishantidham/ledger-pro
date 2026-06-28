@@ -23,5 +23,20 @@ const DB = {
             throw error;
         }
         return data[0];
+    },
+
+    // NEW: Updates the master flat record with new owner/fee details
+    async updateFlatMaster(flatNo, updates) {
+        const { data, error } = await supabaseClient
+            .from('flats')
+            .update(updates)
+            .eq('flat_no', flatNo)
+            .select();
+            
+        if (error) {
+            console.error("Error updating flat:", error);
+            throw error;
+        }
+        return data[0];
     }
 };
