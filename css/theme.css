@@ -2,7 +2,7 @@
     /* Premium Color Palette */
     --c-saffron: #F26522; 
     --c-saffron-dark: #D9531E;
-    --c-bg: #F3F4F6; /* Soft gray so white cards pop */
+    --c-bg: #F3F4F6;
     --c-surface: #FFFFFF; 
     --c-border: #E5E7EB;
     
@@ -11,14 +11,12 @@
     --c-success: #10B981;
     --c-error: #EF4444;
     
-    /* Modern Fluid Typography */
     --f-xs: clamp(0.7rem, 2vw, 0.75rem);
     --f-sm: clamp(0.8rem, 2.5vw, 0.875rem);
     --f-base: clamp(0.95rem, 3vw, 1rem);
     --f-lg: clamp(1.1rem, 4vw, 1.25rem);
     --f-xl: clamp(1.5rem, 5vw, 2rem);
 
-    /* Premium Geometry & Elevation */
     --radius-sm: 8px; 
     --radius-md: 14px; 
     --radius-lg: 24px;
@@ -30,15 +28,15 @@
     --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Lexend', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+/* Switched to Inter Font */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 body { background: var(--c-bg); color: var(--c-text); -webkit-font-smoothing: antialiased; line-height: 1.5; }
 
-/* Utilities */
 .hidden { display: none !important; }
 .view { display: none; }
 .active-view { display: block; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .hidden-view { display: none !important; }
-.font-semibold { font-weight: 600; }
+.font-semibold { font-weight: 500; } /* Adjusted down for Inter's natural weight */
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px) scale(0.98); }
@@ -53,7 +51,6 @@ body { background: var(--c-bg); color: var(--c-text); -webkit-font-smoothing: an
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .align-end { align-items: flex-end; }
 
-/* Premium Gradient Greeting */
 .text-gradient {
     background: linear-gradient(135deg, #F26522, #F59E0B);
     -webkit-background-clip: text;
@@ -61,12 +58,10 @@ body { background: var(--c-bg); color: var(--c-text); -webkit-font-smoothing: an
     display: inline-block;
 }
 
-/* Tighter form spacing */
 .compact-form { display: flex; flex-direction: column; gap: 0.75rem; }
-.compact-input, .fake-input { padding: 0.75rem 0.875rem; font-size: 0.95rem; font-weight: 500; }
+.compact-input, .fake-input { padding: 0.75rem 0.875rem; font-size: 0.95rem; font-weight: 400; }
 .input-wrap label { font-size: 0.65rem; margin-bottom: 2px; }
 
-/* Global Loading Screen */
 #global-loader {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: var(--c-surface); z-index: 9999;
