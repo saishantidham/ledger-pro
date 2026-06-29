@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const authView = document.getElementById('auth-view');
     const hubView = document.getElementById('hub-view');
+    const loader = document.getElementById('global-loader'); // Fetch old loader if it exists
     
     const loginForm = document.getElementById('login-form');
     const emailInput = document.getElementById('email');
@@ -19,6 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         if (session && !error) {
             transitionToHub();
+        } else {
+            // Instantly kill loader if showing login screen
+            if (loader) loader.remove();
         }
     }
 
@@ -62,18 +66,24 @@ document.addEventListener('DOMContentLoaded', () => {
     function transitionToHub() {
         setDynamicGreeting();
         
-        // Polling loop: Wait safely for engine.js to fully parse, fetch DB, then transition
+        // Polling loop: Wait safely for engine.js to fully parse
         let attempts = 0;
         const checkEngine = setInterval(async () => {
             if (typeof window.loadHubData === 'function') {
                 clearInterval(checkEngine);
-                await window.loadHubData();
+                await window.loadHubData(); // Draws calendar BEFORE showing view
+                
                 authView.classList.replace('active-view', 'hidden-view');
                 hubView.classList.replace('hidden-view', 'active-view');
+                
+                // Annihilate the loader instantly so there are no flashes
+                if (loader) loader.remove(); 
+                
             } else if (attempts > 30) {
                 clearInterval(checkEngine); // Failsafe
                 authView.classList.replace('active-view', 'hidden-view');
                 hubView.classList.replace('hidden-view', 'active-view');
+                if (loader) loader.remove();
             }
             attempts++;
         }, 50);
