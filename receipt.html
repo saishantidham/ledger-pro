@@ -170,7 +170,7 @@
                 document.getElementById('r-months').textContent = data.months_covered;
                 document.getElementById('r-cash').textContent = data.cash_amount ? `₹${data.cash_amount}` : '-';
                 document.getElementById('r-online').textContent = data.online_amount ? `₹${data.online_amount}` : '-';
-                document.getElementById('r-total').textContent = `₹${data.total_amount}`;
+                document.getElementById('r-total').textContent = \₹${data.total_amount || 0}`;`
                 document.getElementById('r-rem').textContent = data.remarks || 'None';
 
                 // Generate secure verification QR Code pointing to this URL
