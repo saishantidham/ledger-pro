@@ -14,9 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsSheet = document.getElementById('settings-sheet');
     const logoutBtn = document.getElementById('logout-btn');
 
-    // Timer to guarantee splash screen animation plays
     const splashStartTime = Date.now();
-    const SPLASH_MIN_DURATION = 2000; // 2 seconds
+    const SPLASH_MIN_DURATION = 2000;
 
     checkUser();
 
@@ -26,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
             transitionToHub();
         } else {
             hideLoader();
+            authView.classList.replace('hidden-view', 'active-view');
         }
     }
 
@@ -72,14 +72,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function transitionToHub() {
-        if(authView) authView.classList.replace('active-view', 'hidden-view');
-        if(hubView) hubView.classList.replace('hidden-view', 'active-view');
+        authView.classList.replace('active-view', 'hidden-view');
+        hubView.classList.replace('hidden-view', 'active-view');
         setDynamicGreeting();
         
-        if(typeof window.loadHubData === 'function') {
-            await window.loadHubData();
-        }
-        hideLoader();
+        // This permanently fixes the empty calendar bug. It forces auth to wait for engine.js.
+        const tryLoad = setInterval(async () => {
+            if(typeof window.loadHubData === 'function') {
+                clearInterval(tryLoad);
+                await window.loadHubData();
+                hideLoader(); 
+            }
+        }, 50);
     }
 
     function hideLoader() {
