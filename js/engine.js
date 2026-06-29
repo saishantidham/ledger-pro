@@ -377,10 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { document.getElementById('submit-receipt-btn').textContent = "Log Entry"; updateNextReceiptPlaceholder(); }
     });
 
-    // === NO-LOADER NEXT ENTRY UI ===
+    // === CONTINUOUS ENTRY MODE ===
     document.getElementById('modal-next-btn').onclick = async () => {
         successModal.classList.remove('visible');
         
+        // 1. Instantly Wipe Form Variables
         currentSelectedFlatNo = null;
         D.flatBtn.classList.remove('selected'); D.flatBtnText.textContent = "Select Flat / Owner...";
         D.name.value = ""; D.phone.value = ""; D.baseFee.value = ""; D.isRented.checked = false;
@@ -392,8 +393,20 @@ document.addEventListener('DOMContentLoaded', () => {
         D.mCalc.textContent = "0 Months"; D.baseTotalCalc.textContent = "₹0";
         if (D.toggle.checked) { D.toggle.checked = false; D.toggle.dispatchEvent(new Event('change')); }
         
-        switchView('hub'); 
+        // 2. Scroll Back to Top for next entry
+        const formContainer = document.querySelector('.ultra-compact-form');
+        if (formContainer) formContainer.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // 3. Tactile Feedback
+        UX.vibrateLight();
+        
+        // 4. Silently fetch fresh cache in the background 
+        // (This ensures next search has the freshest data, and automatically calls renderCalendar)
         await window.loadHubData();
+        
+        // 5. Instantly update the Entry Number UI for the user's flow
+        const nextSerial = receiptsData.length > 0 ? Math.max(...receiptsData.map(r => r.serial_no)) + 1 : 1;
+        serialDisplay.textContent = `Entry #${nextSerial}`;
     };
 
     // === PWA INSTALLATION ENGINE ===
