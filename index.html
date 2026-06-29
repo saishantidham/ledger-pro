@@ -19,7 +19,6 @@
     <link rel="stylesheet" href="css/modal.css">
 
     <style>
-        /* Workspace & Form UI */
         #workspace-view {
             height: 100dvh !important; display: flex; flex-direction: column;
             overflow: hidden !important; background: var(--c-bg); transition: height 0.1s ease-out; 
@@ -94,6 +93,7 @@
 </head>
 <body>
 
+    <!-- Auth View -->
     <main id="auth-view" class="view active-view">
         <div class="login-card">
             <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -108,6 +108,7 @@
         </div>
     </main>
 
+    <!-- Hub View -->
     <main id="hub-view" class="view hidden-view screen-lock">
         <div class="hub-wrapper">
             <header class="hub-header">
@@ -148,6 +149,7 @@
         </div>
     </main>
 
+    <!-- Workspace View -->
     <main id="workspace-view" class="view hidden-view">
         <header class="workspace-header">
             <button id="back-to-hub-btn" class="icon-btn" style="width:32px; height:32px;">
@@ -247,6 +249,7 @@
         </form>
     </main>
 
+    <!-- Modals -->
     <div id="flat-search-modal" class="bottom-sheet-overlay hidden">
         <div class="bottom-sheet h-80">
             <div class="sheet-header">
