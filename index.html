@@ -19,31 +19,6 @@
     <link rel="stylesheet" href="css/modal.css">
 
     <style>
-        /* === CUSTOM IMAGE SPLASH SCREEN === */
-        #global-loader {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: var(--c-surface); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s ease;
-        }
-        .splash-brand {
-            width: 140px; height: 140px; object-fit: contain; /* Made bigger as requested */
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-            margin-bottom: 16px;
-        }
-        @keyframes pulse { 
-            0%, 100% { transform: scale(1); opacity: 1; } 
-            50% { transform: scale(1.05); opacity: 0.85; } 
-        }
-        .splash-title { font-size: 28px; font-weight: 800; color: var(--c-text); letter-spacing: -0.5px; margin-bottom: 40px; }
-        
-        .powered-by { 
-            position: absolute; bottom: 40px; 
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            font-size: 12px; color: var(--c-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
-        }
-        .powered-by img { height: 28px; object-fit: contain; }
-
         /* Workspace & Form UI */
         #workspace-view {
             height: 100dvh !important; display: flex; flex-direction: column;
@@ -119,18 +94,7 @@
 </head>
 <body>
 
-    <!-- UPDATED: Custom Image Splash Screen (Removed Spinner for clean look) -->
-    <div id="global-loader">
-        <img src="splashicon.png" class="splash-brand" alt="Ledger Pro" onerror="this.style.display='none'">
-        <h1 class="splash-title">Ledger Pro</h1>
-        <div class="powered-by">
-            Powered by Unskyit
-            <img src="powerby.png" alt="Unskyit" onerror="this.style.display='none'">
-        </div>
-    </div>
-
-    <!-- Auth View (Hidden on boot to prevent flashing) -->
-    <main id="auth-view" class="view hidden-view">
+    <main id="auth-view" class="view active-view">
         <div class="login-card">
             <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <h1 class="brand-title">Ledger Pro</h1>
@@ -144,7 +108,6 @@
         </div>
     </main>
 
-    <!-- Hub View (Hidden on boot to prevent flashing) -->
     <main id="hub-view" class="view hidden-view screen-lock">
         <div class="hub-wrapper">
             <header class="hub-header">
@@ -185,7 +148,6 @@
         </div>
     </main>
 
-    <!-- Workspace View -->
     <main id="workspace-view" class="view hidden-view">
         <header class="workspace-header">
             <button id="back-to-hub-btn" class="icon-btn" style="width:32px; height:32px;">
@@ -285,7 +247,6 @@
         </form>
     </main>
 
-    <!-- Modals -->
     <div id="flat-search-modal" class="bottom-sheet-overlay hidden">
         <div class="bottom-sheet h-80">
             <div class="sheet-header">
