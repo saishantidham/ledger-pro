@@ -6,13 +6,12 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Ledger Pro</title>
-
-    <link rel="manifest" href="manifest.json">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="manifest" href="manifest.json">
 
     <link rel="stylesheet" href="css/theme.css">
     <link rel="stylesheet" href="css/layout.css">
@@ -20,6 +19,27 @@
     <link rel="stylesheet" href="css/modal.css">
 
     <style>
+        /* === CUSTOM ANIMATED SPLASH SCREEN === */
+        #global-loader {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--c-surface); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        .splash-brand {
+            width: 80px; height: 80px; color: var(--c-saffron);
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            margin-bottom: 12px;
+        }
+        @keyframes pulse { 
+            0%, 100% { transform: scale(1); opacity: 1; } 
+            50% { transform: scale(1.08); opacity: 0.8; } 
+        }
+        .splash-title { font-size: 28px; font-weight: 800; color: var(--c-text); letter-spacing: -0.5px; margin-bottom: 40px; }
+        .powered-by { position: absolute; bottom: 40px; font-size: 11px; color: var(--c-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;}
+        .powered-by span { color: var(--c-saffron); font-weight: 800; letter-spacing: 2px;}
+
+        /* Workspace & Form UI */
         #workspace-view {
             height: 100dvh !important; display: flex; flex-direction: column;
             overflow: hidden !important; background: var(--c-bg); transition: height 0.1s ease-out; 
@@ -55,7 +75,6 @@
         
         input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; padding-left: 8px; }
 
-        /* Fake Input specific fix for short months */
         .relative { position: relative; }
         .hidden-native-picker { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
         
@@ -78,11 +97,10 @@
         .calc-amount { font-size: 14px; font-weight: 700; color: var(--c-saffron-dark); line-height: 1;}
 
         .uc-footer-dock {
-    background: rgba(242, 101, 34, 0.05); border: 1px solid rgba(242, 101, 34, 0.15);
-    border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
-    margin-top: 16px; /* Locks it tightly just beneath the Remarks field */
-    margin-bottom: 8px;
-}
+            background: rgba(242, 101, 34, 0.05); border: 1px solid rgba(242, 101, 34, 0.15);
+            border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+            margin-top: 8px; margin-bottom: env(safe-area-inset-bottom, 0px);
+        }
         .uc-total-val { font-size: 22px; font-weight: 700; color: var(--c-text); line-height: 1; text-align: right;}
         
         .uc-submit-btn { 
@@ -91,14 +109,17 @@
         }
         .uc-submit-btn:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(242, 101, 34, 0.3); }
         .action-tray { display: flex; gap: 6px; margin-top: 8px; }
-        .btn-micro { background: var(--c-bg); border: 1px solid var(--c-border); border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: 500; color: var(--c-text); display: flex; align-items: center; gap: 4px; }
+        .btn-micro { background: var(--c-bg); border: 1px solid var(--c-border); border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: 500; color: var(--c-text); display: flex; align-items: center; gap: 4px; cursor: pointer;}
     </style>
 </head>
 <body>
 
     <div id="global-loader">
-        <div class="spinner"></div>
-        <p class="text-sm font-semibold text-muted" id="loader-text">Waking up engine...</p>
+        <svg class="splash-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h1 class="splash-title">Ledger Pro</h1>
+        <div class="spinner" style="width: 32px; height: 32px; border-width: 3px;"></div>
+        <p class="text-sm font-semibold text-muted mt-md" id="loader-text">Waking up engine...</p>
+        <div class="powered-by">Powered by <span>XYZ</span></div>
     </div>
 
     <main id="auth-view" class="view hidden-view">
@@ -290,7 +311,8 @@
                 <p class="text-xs text-muted mt-sm" style="font-weight: 500;">Tags: {name}, {amount}, {flat}, {rcpt}, {link}</p>
             </div>
             
-            <button id="logout-btn" class="btn-secondary full-width mt-md" style="color: var(--c-error); border-color: var(--c-error);">Logout Session</button>
+            <button id="install-app-btn" class="btn-primary full-width mb-md hidden" style="background: var(--c-success); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">⬇️ Install App to Device</button>
+            <button id="logout-btn" class="btn-secondary full-width" style="color: var(--c-error); border-color: var(--c-error);">Logout Session</button>
         </div>
     </div>
 
@@ -334,7 +356,7 @@
     <script src="js/db.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/engine.js"></script>
-
+    
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
