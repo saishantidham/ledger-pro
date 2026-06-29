@@ -27,22 +27,22 @@
             transition: opacity 0.5s ease;
         }
         .splash-brand {
-            width: 120px; height: 120px; object-fit: contain;
+            width: 140px; height: 140px; object-fit: contain; /* Made bigger as requested */
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
         @keyframes pulse { 
             0%, 100% { transform: scale(1); opacity: 1; } 
-            50% { transform: scale(1.08); opacity: 0.8; } 
+            50% { transform: scale(1.05); opacity: 0.85; } 
         }
         .splash-title { font-size: 28px; font-weight: 800; color: var(--c-text); letter-spacing: -0.5px; margin-bottom: 40px; }
         
         .powered-by { 
             position: absolute; bottom: 40px; 
             display: flex; align-items: center; justify-content: center; gap: 8px;
-            font-size: 11px; color: var(--c-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+            font-size: 12px; color: var(--c-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
         }
-        .powered-by img { height: 24px; object-fit: contain; }
+        .powered-by img { height: 28px; object-fit: contain; }
 
         /* Workspace & Form UI */
         #workspace-view {
@@ -119,19 +119,17 @@
 </head>
 <body>
 
-    <!-- UPDATED: Custom Image Splash Screen -->
+    <!-- UPDATED: Custom Image Splash Screen (Removed Spinner for clean look) -->
     <div id="global-loader">
         <img src="splashicon.png" class="splash-brand" alt="Ledger Pro" onerror="this.style.display='none'">
         <h1 class="splash-title">Ledger Pro</h1>
-        <div class="spinner" style="width: 32px; height: 32px; border-width: 3px;"></div>
-        <p class="text-sm font-semibold text-muted mt-md" id="loader-text">Waking up engine...</p>
         <div class="powered-by">
-            Powered by 
+            Powered by Unskyit
             <img src="powerby.png" alt="Unskyit" onerror="this.style.display='none'">
         </div>
     </div>
 
-    <!-- Auth View -->
+    <!-- Auth View (Hidden on boot to prevent flashing) -->
     <main id="auth-view" class="view hidden-view">
         <div class="login-card">
             <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -146,8 +144,8 @@
         </div>
     </main>
 
-    <!-- Hub View -->
-    <main id="hub-view" class="view active-view screen-lock">
+    <!-- Hub View (Hidden on boot to prevent flashing) -->
+    <main id="hub-view" class="view hidden-view screen-lock">
         <div class="hub-wrapper">
             <header class="hub-header">
                 <div>
