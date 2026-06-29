@@ -136,7 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             flatsData = await DB.fetchFlats() || [];
             
-            // FULL SELECT to guarantee safe fetch without missing columns
             const { data: rcpts, error } = await supabaseClient.from('receipts')
                 .select('*')
                 .order('created_at', { ascending: false });
@@ -148,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateNextReceiptPlaceholder();
             renderCalendar();
         } catch (err) {
-            console.error("Database sync issue:", err);
+            console.error("Database fetch error:", err);
         }
     };
 
@@ -378,11 +377,10 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { document.getElementById('submit-receipt-btn').textContent = "Log Entry"; updateNextReceiptPlaceholder(); }
     });
 
-    // === ROBUST NEXT ENTRY REFRESH UI ===
+    // === NO-LOADER NEXT ENTRY UI ===
     document.getElementById('modal-next-btn').onclick = async () => {
         successModal.classList.remove('visible');
         
-        // Instantly Wipe Form Variables
         currentSelectedFlatNo = null;
         D.flatBtn.classList.remove('selected'); D.flatBtnText.textContent = "Select Flat / Owner...";
         D.name.value = ""; D.phone.value = ""; D.baseFee.value = ""; D.isRented.checked = false;
@@ -394,10 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
         D.mCalc.textContent = "0 Months"; D.baseTotalCalc.textContent = "₹0";
         if (D.toggle.checked) { D.toggle.checked = false; D.toggle.dispatchEvent(new Event('change')); }
         
-        // Switch back to hub instantly for pure workflow speed
         switchView('hub'); 
-        
-        // Silently fetch fresh cache in the background
         await window.loadHubData();
     };
 
