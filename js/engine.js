@@ -109,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function buildWhatsAppMsg(name, amount, flat, rcpt, uuid) {
         let template = localStorage.getItem('waTemplate') || defaultTemplate;
-        // Construct clean absolute URL for the receipt viewer
         const basePath = window.location.origin + window.location.pathname.replace('index.html', '');
         const receiptLink = `${basePath}receipt.html?id=${uuid}`;
         
@@ -134,11 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === EXPORTED ENGINE STARTUP ===
     window.loadHubData = async function() {
-        const loaderText = document.getElementById('loader-text');
-        if(loaderText) loaderText.textContent = "Syncing ledger...";
-        
         flatsData = await DB.fetchFlats() || [];
-        const { data: rcpts } = await supabaseClient.from('receipts').select('uuid, date, total_amount, serial_no, receipt_no, flat_no').order('created_at', { ascending: false });
+        const { data: rcpts } = await supabaseClient.from('receipts').select('uuid, date, total_amount, serial_no, receipt_no, flat_no, is_shareable').order('created_at', { ascending: false });
         receiptsData = rcpts || [];
         
         updateNextReceiptPlaceholder();
@@ -185,8 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const todayStr = today.toISOString().split('T')[0];
         
         receiptsData.forEach(r => {
-            if (r.date === todayStr) tToday += Number(r.total_amount);
-            if (r.date.startsWith(monthPrefix)) tMonth += Number(r.total_amount);
+            if (r.date === todayStr) tToday += Number(r.total_amount || 0);
+            if (r.date.startsWith(monthPrefix)) tMonth += Number(r.total_amount || 0);
         });
         document.getElementById('stat-today').textContent = `₹${tToday}`; 
         document.getElementById('stat-month').textContent = `₹${tMonth}`;
@@ -203,16 +199,23 @@ document.addEventListener('DOMContentLoaded', () => {
             list.innerHTML = '<li class="text-center text-muted mt-md">No entries found.</li>';
         } else {
             recent.forEach(r => {
+                const isLocked = r.is_shareable === false;
+                const lockIcon = isLocked 
+                    ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--c-error)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
+                    : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--c-success)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`;
+                const lockText = isLocked ? `<span style="color:var(--c-error)">Locked</span>` : `<span style="color:var(--c-success)">Public</span>`;
+
                 const li = document.createElement('li');
                 li.className = 'list-item flex-between align-center';
                 li.innerHTML = `
                     <div style="flex: 1;">
-                        <div class="list-item-title">${r.flat_no} <span class="text-saffron font-semibold ml-xs">₹${r.total_amount}</span></div>
+                        <div class="list-item-title">${r.flat_no} <span class="text-saffron font-semibold ml-xs">₹${r.total_amount || 0}</span></div>
                         <div class="list-item-sub">Rcpt: ${r.receipt_no} | ${new Date(r.date).toLocaleDateString('en-GB')}</div>
                         <div class="action-tray">
                             <button class="btn-micro" onclick="editOldLog('${r.uuid}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button>
-                            <button class="btn-micro" onclick="shareRecent('${r.flat_no}', ${r.total_amount}, '${r.receipt_no}', '${r.uuid}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> WA</button>
+                            <button class="btn-micro" onclick="shareRecent('${r.flat_no}', ${r.total_amount || 0}, '${r.receipt_no}', '${r.uuid}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> WA</button>
                             <button class="btn-micro" onclick="generateReceipt('${r.uuid}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Rcpt</button>
+                            <button class="btn-micro" style="margin-left:auto; border-color: ${isLocked ? 'var(--c-error)' : 'var(--c-success)'}" onclick="toggleLinkSecurity('${r.uuid}', ${!isLocked})">${lockIcon} ${lockText}</button>
                         </div>
                     </div>
                 `;
@@ -223,6 +226,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('close-recent-btn')?.addEventListener('click', () => { document.getElementById('recent-logs-sheet').classList.add('hidden'); });
+
+    window.toggleLinkSecurity = async function(uuid, currentStatus) {
+        UX.playClick();
+        const newStatus = !currentStatus; 
+        try {
+            await DB.toggleReceiptSharing(uuid, newStatus);
+            const rcpt = receiptsData.find(r => r.uuid === uuid);
+            if(rcpt) rcpt.is_shareable = newStatus;
+            UX.vibrateSuccess();
+            document.getElementById('view-recent-btn').click(); 
+        } catch(e) {
+            UX.vibrateError();
+            alert("Failed to update security status. Check connection.");
+        }
+    };
 
     window.shareRecent = function(flat, amount, rcpt, uuid) {
         UX.playClick();
@@ -246,8 +264,6 @@ document.addEventListener('DOMContentLoaded', () => {
         activeSessionDateDisplay.textContent = selectedSessionDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
         D.dateIn.value = dateStr; 
         
-        const nextSerial = receiptsData.length > 0 ? Math.max(...receiptsData.map(r => r.serial_no)) + 1 : 1;
-        serialDisplay.textContent = `Entry #${nextSerial}`;
         updateNextReceiptPlaceholder();
         switchView('workspace');
     }
@@ -349,7 +365,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const rPayload = {
             flat_no: currentSelectedFlatNo, date: D.dateIn.value,
             months_covered: `${formatMonthStr(D.mFromIn.value)} to ${formatMonthStr(D.mToIn.value)}`,
-            cash_amount: cashAmt > 0 ? cashAmt : null, online_amount: onlineAmt > 0 ? onlineAmt : null, remarks: D.remarks.value
+            // FIXED: Send 0 instead of null to prevent SQL crash!
+            cash_amount: cashAmt, online_amount: onlineAmt, remarks: D.remarks.value
         };
         if (D.toggle.checked && D.rcptNo.value) rPayload.receipt_no = D.rcptNo.value;
 
@@ -373,8 +390,21 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { document.getElementById('submit-receipt-btn').textContent = "Log Entry"; updateNextReceiptPlaceholder(); }
     });
 
-    document.getElementById('modal-next-btn').onclick = () => {
-        successModal.classList.remove('visible'); currentSelectedFlatNo = null;
+    // === NEW: ROBUST NEXT ENTRY REFRESH UI ===
+    document.getElementById('modal-next-btn').onclick = async () => {
+        successModal.classList.remove('visible');
+        
+        // Trigger Splash Screen to hide the refresh process
+        const loader = document.getElementById('global-loader');
+        if(loader) {
+            document.getElementById('loader-text').textContent = "Refreshing data...";
+            loader.style.display = 'flex';
+            void loader.offsetWidth; // Force CSS Reflow
+            loader.style.opacity = '1';
+        }
+
+        // Wipe Form Variables completely
+        currentSelectedFlatNo = null;
         D.flatBtn.classList.remove('selected'); D.flatBtnText.textContent = "Select Flat / Owner...";
         D.name.value = ""; D.phone.value = ""; D.baseFee.value = ""; D.isRented.checked = false;
         D.cash.value = ""; D.online.value = ""; D.total.textContent = "₹0";
@@ -383,9 +413,44 @@ document.addEventListener('DOMContentLoaded', () => {
         D.mFromDisp.textContent = "MMM YYYY"; D.mFromDisp.classList.add('text-muted');
         D.mToDisp.textContent = "MMM YYYY"; D.mToDisp.classList.add('text-muted');
         D.mCalc.textContent = "0 Months"; D.baseTotalCalc.textContent = "₹0";
+        if (D.toggle.checked) { D.toggle.checked = false; D.toggle.dispatchEvent(new Event('change')); }
         
-        const nextSerial = receiptsData.length > 0 ? Math.max(...receiptsData.map(r => r.serial_no)) + 1 : 1;
-        serialDisplay.textContent = `Entry #${nextSerial}`;
-        updateNextReceiptPlaceholder();
+        // Force fresh database fetch for newest (R) flags
+        await window.loadHubData();
+        
+        // Hide Splash Screen and drop user safely back to Hub
+        setTimeout(() => {
+            if(loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 400);
+            }
+            switchView('hub'); 
+        }, 1200); // 1.2s delay keeps the UI feeling solid and professional
     };
+
+    // === PWA INSTALLATION ENGINE ===
+    let deferredPrompt;
+    const installBtn = document.getElementById('install-app-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if(installBtn) installBtn.classList.remove('hidden');
+    });
+
+    if(installBtn) {
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            UX.playClick();
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') installBtn.classList.add('hidden');
+            deferredPrompt = null;
+        });
+    }
+
+    window.addEventListener('appinstalled', () => {
+        if(installBtn) installBtn.classList.add('hidden');
+        deferredPrompt = null;
+    });
 });
