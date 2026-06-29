@@ -377,8 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { document.getElementById('submit-receipt-btn').textContent = "Log Entry"; updateNextReceiptPlaceholder(); }
     });
 
-    // === CONTINUOUS ENTRY MODE ===
-    // === CONTINUOUS ENTRY MODE (FIXED) ===
+    // === CONTINUOUS ENTRY MODE (GUARANTEED NO HUB REDIRECT) ===
     document.getElementById('modal-next-btn').onclick = async () => {
         // 1. Hide the success modal
         successModal.classList.remove('visible');
@@ -393,13 +392,17 @@ document.addEventListener('DOMContentLoaded', () => {
         D.mFromDisp.textContent = "MMM YYYY"; D.mFromDisp.classList.add('text-muted');
         D.mToDisp.textContent = "MMM YYYY"; D.mToDisp.classList.add('text-muted');
         D.mCalc.textContent = "0 Months"; D.baseTotalCalc.textContent = "₹0";
-        if (D.toggle.checked) { D.toggle.checked = false; D.toggle.dispatchEvent(new Event('change')); }
+        
+        if (D.toggle.checked) { 
+            D.toggle.checked = false; 
+            D.toggle.dispatchEvent(new Event('change')); 
+        }
         
         // 3. Scroll the form back to the top seamlessly
         const formContainer = document.querySelector('.ultra-compact-form');
         if (formContainer) formContainer.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // 4. Update the Entry Number UI instantly for the user's flow
+        // 4. Update the Entry Number UI instantly
         const nextSerial = receiptsData.length > 0 ? Math.max(...receiptsData.map(r => r.serial_no)) + 1 : 1;
         serialDisplay.textContent = `Entry #${nextSerial}`;
 
