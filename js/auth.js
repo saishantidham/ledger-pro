@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const authView = document.getElementById('auth-view');
     const hubView = document.getElementById('hub-view');
-    const loader = document.getElementById('global-loader');
     
     const loginForm = document.getElementById('login-form');
     const emailInput = document.getElementById('email');
@@ -14,19 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsSheet = document.getElementById('settings-sheet');
     const logoutBtn = document.getElementById('logout-btn');
 
-    const splashStartTime = Date.now();
-    const SPLASH_MIN_DURATION = 2000;
-
     checkUser();
 
     async function checkUser() {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         if (session && !error) {
             transitionToHub();
-        } else {
-            hideLoader();
-            authView.classList.replace('hidden-view', 'active-view');
         }
+        // If not logged in, auth-view stays active.
     }
 
     loginForm?.addEventListener('submit', async (e) => {
@@ -76,25 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
         hubView.classList.replace('hidden-view', 'active-view');
         setDynamicGreeting();
         
-        // This permanently fixes the empty calendar bug. It forces auth to wait for engine.js.
-        const tryLoad = setInterval(async () => {
-            if(typeof window.loadHubData === 'function') {
-                clearInterval(tryLoad);
-                await window.loadHubData();
-                hideLoader(); 
-            }
-        }, 50);
-    }
-
-    function hideLoader() {
-        if(!loader) return;
-        const elapsed = Date.now() - splashStartTime;
-        const remainingTime = Math.max(0, SPLASH_MIN_DURATION - elapsed);
-        
-        setTimeout(() => {
-            loader.style.opacity = '0';
-            setTimeout(() => loader.style.display = 'none', 500);
-        }, remainingTime);
+        // Wait securely for engine.js to declare loadHubData, then run it. No loader intervals.
+        if (typeof window.loadHubData === 'function') {
+            await window.loadHubData();
+        }
     }
 
     function setDynamicGreeting() {
