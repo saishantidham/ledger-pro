@@ -133,19 +133,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === EXPORTED ENGINE STARTUP ===
     window.loadHubData = async function() {
-        const loaderText = document.getElementById('loader-text');
-        if(loaderText) loaderText.textContent = "Syncing ledger...";
-        
-        flatsData = await DB.fetchFlats() || [];
-        
-        // FIXED: Removed the broken 'is_shareable' column request from this line!
-        const { data: rcpts, error } = await supabaseClient.from('receipts').select('uuid, date, total_amount, serial_no, receipt_no, flat_no').order('created_at', { ascending: false });
-        if (error) console.error("Database fetch error:", error);
-        
-        receiptsData = rcpts || [];
-        
-        updateNextReceiptPlaceholder();
-        renderCalendar();
+        try {
+            flatsData = await DB.fetchFlats() || [];
+            
+            // REMOVED `is_shareable` from here to fix the empty calendar error!
+            const { data: rcpts, error } = await supabaseClient.from('receipts')
+                .select('uuid, date, total_amount, serial_no, receipt_no, flat_no')
+                .order('created_at', { ascending: false });
+                
+            if (error) throw error;
+            
+            receiptsData = rcpts || [];
+            
+            updateNextReceiptPlaceholder();
+            renderCalendar();
+        } catch (err) {
+            console.error("Critical error in loadHubData:", err);
+        }
     };
 
     function switchView(viewName) {
@@ -374,18 +378,11 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { document.getElementById('submit-receipt-btn').textContent = "Log Entry"; updateNextReceiptPlaceholder(); }
     });
 
-    // === ROBUST NEXT ENTRY REFRESH UI ===
+    // === ROBUST NEXT ENTRY REFRESH UI (No Loader Override) ===
     document.getElementById('modal-next-btn').onclick = async () => {
         successModal.classList.remove('visible');
         
-        const loader = document.getElementById('global-loader');
-        if(loader) {
-            document.getElementById('loader-text').textContent = "Refreshing data...";
-            loader.style.display = 'flex';
-            void loader.offsetWidth; 
-            loader.style.opacity = '1';
-        }
-
+        // Instantly Wipe Form Variables
         currentSelectedFlatNo = null;
         D.flatBtn.classList.remove('selected'); D.flatBtnText.textContent = "Select Flat / Owner...";
         D.name.value = ""; D.phone.value = ""; D.baseFee.value = ""; D.isRented.checked = false;
@@ -397,15 +394,11 @@ document.addEventListener('DOMContentLoaded', () => {
         D.mCalc.textContent = "0 Months"; D.baseTotalCalc.textContent = "₹0";
         if (D.toggle.checked) { D.toggle.checked = false; D.toggle.dispatchEvent(new Event('change')); }
         
-        await window.loadHubData();
+        // Switch back to hub instantly for pure workflow speed
+        switchView('hub'); 
         
-        setTimeout(() => {
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 400);
-            }
-            switchView('hub'); 
-        }, 1200); 
+        // Silently fetch fresh cache in the background
+        await window.loadHubData();
     };
 
     // === PWA INSTALLATION ENGINE ===
