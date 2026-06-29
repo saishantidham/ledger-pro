@@ -377,12 +377,12 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { document.getElementById('submit-receipt-btn').textContent = "Log Entry"; updateNextReceiptPlaceholder(); }
     });
 
-    // === CONTINUOUS ENTRY MODE (GUARANTEED NO HUB REDIRECT) ===
+    // === CONTINUOUS ENTRY MODE (FIXED: DOES NOT GO TO CALENDAR) ===
     document.getElementById('modal-next-btn').onclick = async () => {
-        // 1. Hide the success modal
+        // 1. Hide the modal immediately
         successModal.classList.remove('visible');
         
-        // 2. Instantly Wipe Form Variables
+        // 2. Wipe the form completely clean
         currentSelectedFlatNo = null;
         D.flatBtn.classList.remove('selected'); D.flatBtnText.textContent = "Select Flat / Owner...";
         D.name.value = ""; D.phone.value = ""; D.baseFee.value = ""; D.isRented.checked = false;
@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
             D.toggle.dispatchEvent(new Event('change')); 
         }
         
-        // 3. Scroll the form back to the top seamlessly
+        // 3. Scroll safely to the top
         const formContainer = document.querySelector('.ultra-compact-form');
         if (formContainer) formContainer.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -406,7 +406,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextSerial = receiptsData.length > 0 ? Math.max(...receiptsData.map(r => r.serial_no)) + 1 : 1;
         serialDisplay.textContent = `Entry #${nextSerial}`;
 
-        // 5. Silently fetch fresh cache in the background (Notice: NO switchView here!)
+        // 5. Silently refresh Supabase data in the background. 
+        // THIS WILL NOT SWITCH YOUR VIEW. YOU WILL STAY ON THE FORM.
         await window.loadHubData();
     };
 
