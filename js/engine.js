@@ -136,9 +136,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             flatsData = await DB.fetchFlats() || [];
             
-            // REMOVED `is_shareable` from here to fix the empty calendar error!
+            // FULL SELECT to guarantee safe fetch without missing columns
             const { data: rcpts, error } = await supabaseClient.from('receipts')
-                .select('uuid, date, total_amount, serial_no, receipt_no, flat_no')
+                .select('*')
                 .order('created_at', { ascending: false });
                 
             if (error) throw error;
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateNextReceiptPlaceholder();
             renderCalendar();
         } catch (err) {
-            console.error("Critical error in loadHubData:", err);
+            console.error("Database sync issue:", err);
         }
     };
 
@@ -378,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { document.getElementById('submit-receipt-btn').textContent = "Log Entry"; updateNextReceiptPlaceholder(); }
     });
 
-    // === ROBUST NEXT ENTRY REFRESH UI (No Loader Override) ===
+    // === ROBUST NEXT ENTRY REFRESH UI ===
     document.getElementById('modal-next-btn').onclick = async () => {
         successModal.classList.remove('visible');
         
