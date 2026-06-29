@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (session && !error) {
             transitionToHub();
         }
-        // If not logged in, auth-view stays active natively.
     }
 
     loginForm?.addEventListener('submit', async (e) => {
@@ -57,28 +56,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if(authView) authView.classList.replace('hidden-view', 'active-view');
     });
 
-    settingsBtn?.addEventListener('click', () => {
-        if(settingsSheet) settingsSheet.classList.remove('hidden');
-    });
-    
-    closeSettingsBtn?.addEventListener('click', () => {
-        if(settingsSheet) settingsSheet.classList.add('hidden');
-    });
+    settingsBtn?.addEventListener('click', () => { if(settingsSheet) settingsSheet.classList.remove('hidden'); });
+    closeSettingsBtn?.addEventListener('click', () => { if(settingsSheet) settingsSheet.classList.add('hidden'); });
 
     function transitionToHub() {
-        authView.classList.replace('active-view', 'hidden-view');
-        hubView.classList.replace('hidden-view', 'active-view');
         setDynamicGreeting();
         
-        // THE FIX: Silently check every 50ms until the engine script is parsed and ready, 
-        // then fetch the database and draw the calendar instantly. No visible loaders!
+        // Polling loop: Wait safely for engine.js to fully parse, fetch DB, then transition
         let attempts = 0;
         const checkEngine = setInterval(async () => {
             if (typeof window.loadHubData === 'function') {
                 clearInterval(checkEngine);
                 await window.loadHubData();
-            } else if (attempts > 20) {
-                clearInterval(checkEngine); // Failsafe to stop checking after 1 second
+                authView.classList.replace('active-view', 'hidden-view');
+                hubView.classList.replace('hidden-view', 'active-view');
+            } else if (attempts > 30) {
+                clearInterval(checkEngine); // Failsafe
+                authView.classList.replace('active-view', 'hidden-view');
+                hubView.classList.replace('hidden-view', 'active-view');
             }
             attempts++;
         }, 50);
