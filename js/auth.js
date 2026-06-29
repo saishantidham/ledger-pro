@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsSheet = document.getElementById('settings-sheet');
     const logoutBtn = document.getElementById('logout-btn');
 
+    // Timer to guarantee splash screen animation plays
+    const splashStartTime = Date.now();
+    const SPLASH_MIN_DURATION = 2000; // 2 seconds
+
     checkUser();
 
     async function checkUser() {
@@ -59,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(authView) authView.classList.replace('hidden-view', 'active-view');
     });
 
-    // Bulletproofed event listeners to prevent null crashes
     settingsBtn?.addEventListener('click', () => {
         if(settingsSheet) settingsSheet.classList.remove('hidden');
     });
@@ -73,19 +76,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if(hubView) hubView.classList.replace('hidden-view', 'active-view');
         setDynamicGreeting();
         
-        setTimeout(async () => {
-            if(typeof window.loadHubData === 'function') {
-                await window.loadHubData();
-            }
-            hideLoader();
-        }, 100);
+        if(typeof window.loadHubData === 'function') {
+            await window.loadHubData();
+        }
+        hideLoader();
     }
 
     function hideLoader() {
-        if(loader) {
+        if(!loader) return;
+        const elapsed = Date.now() - splashStartTime;
+        const remainingTime = Math.max(0, SPLASH_MIN_DURATION - elapsed);
+        
+        setTimeout(() => {
             loader.style.opacity = '0';
-            setTimeout(() => loader.style.display = 'none', 400);
-        }
+            setTimeout(() => loader.style.display = 'none', 500);
+        }, remainingTime);
     }
 
     function setDynamicGreeting() {
