@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Ledger Pro</title>
@@ -268,6 +268,12 @@
                         <input type="date" id="export-date-to" class="uc-input">
                     </div>
                 </div>
+                
+                <label class="uc-checkbox-wrap mt-sm" style="height: auto; padding: 6px 0;">
+                    <input type="checkbox" id="hide-blank-flats" checked>
+                    <span class="uc-checkbox-box"></span>
+                    <span class="uc-label" style="margin:0; text-transform:none; font-size:12px; font-weight:700; color:var(--c-text);">Hide Flats with No Payments</span>
+                </label>
             </div>
 
             <div class="fluent-card mb-md">
@@ -277,7 +283,12 @@
             </div>
 
             <div class="flex-spacer"></div>
-            <button id="btn-generate-preview" class="btn-primary full-width mt-lg">Generate Preview</button>
+            <button id="btn-generate-preview" class="btn-primary full-width mt-lg">Generate Quick Preview</button>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <button id="btn-direct-excel" class="btn-secondary full-width" style="color: #2E7D32; border-color: #2E7D32; font-size: 13px;">Direct Excel</button>
+                <button id="btn-direct-pdf" class="btn-secondary full-width" style="color: #D32F2F; border-color: #D32F2F; font-size: 13px;">Direct PDF</button>
+            </div>
         </div>
     </main>
 
@@ -295,43 +306,6 @@
         </div>
     </div>
 
-    <div id="settings-sheet" class="bottom-sheet-overlay hidden">
-        <div class="bottom-sheet">
-            <div class="sheet-header">
-                <h3>Settings</h3>
-                <button id="close-settings-btn" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            </div>
-            
-            <div class="flex-between mt-lg">
-                <span class="font-semibold">Haptic Feedback (Vibration)</span>
-                <label class="switch-mini"><input type="checkbox" id="toggle-haptics" checked><span class="slider-mini"></span></label>
-            </div>
-            <div class="flex-between mt-lg">
-                <span class="font-semibold">App Sounds</span>
-                <label class="switch-mini"><input type="checkbox" id="toggle-sounds" checked><span class="slider-mini"></span></label>
-            </div>
-            
-            <div class="mt-lg mb-lg">
-                <span class="font-semibold text-sm">WhatsApp Default Message</span>
-                <textarea id="wa-default-msg" class="uc-input mt-xs" style="height: 70px; padding: 10px; resize: none; font-size: 12px; line-height: 1.4;"></textarea>
-                <p class="text-xs text-muted mt-sm" style="font-weight: 500;">Tags: {name}, {amount}, {flat}, {rcpt}, {link}</p>
-            </div>
-            
-            <button id="install-app-btn" class="btn-primary full-width mb-md hidden" style="background: var(--c-success); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">⬇️ Install App to Device</button>
-            <button id="logout-btn" class="btn-secondary full-width" style="color: var(--c-error); border-color: var(--c-error);">Logout Session</button>
-        </div>
-    </div>
-
-    <div id="recent-logs-sheet" class="bottom-sheet-overlay hidden">
-        <div class="bottom-sheet h-80">
-            <div class="sheet-header">
-                <h3>Recent Entries</h3>
-                <button id="close-recent-btn" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            </div>
-            <ul id="recent-logs-list" class="virtual-list"></ul>
-        </div>
-    </div>
-
     <div id="preview-modal-overlay" class="bottom-sheet-overlay hidden">
         <div class="bottom-sheet" style="height: 95dvh; padding: 0; background: var(--c-bg);">
             <div class="workspace-header" style="border-radius: 24px 24px 0 0;">
@@ -342,12 +316,15 @@
             
             <div style="flex: 1; overflow: auto; padding: 1rem; -webkit-overflow-scrolling: touch;">
                 <table id="preview-table" style="width: 100%; border-collapse: collapse; font-size: 11px; background: #fff; box-shadow: var(--shadow-soft);">
-                    <thead id="preview-thead" style="background: var(--c-surface); position: sticky; top: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></thead>
+                    <thead id="preview-thead" style="background: var(--c-surface); position: sticky; top: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); z-index: 5;"></thead>
                     <tbody id="preview-tbody"></tbody>
                 </table>
+                <div id="preview-load-more" style="text-align: center; padding: 1rem; display: none;">
+                    <button id="btn-load-more" class="btn-secondary" style="font-size: 12px; padding: 8px 16px;">Load More Rows</button>
+                </div>
             </div>
 
-            <div style="padding: 1rem; background: #fff; border-top: 1px solid var(--c-border); display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="padding: 1rem; background: #fff; border-top: 1px solid var(--c-border); display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; z-index: 10;">
                 <button id="btn-dl-pdf" class="btn-secondary" style="color: #D32F2F; border-color: #D32F2F;">PDF Document</button>
                 <button id="btn-dl-excel" class="btn-secondary" style="color: #2E7D32; border-color: #2E7D32;">Excel Sheet</button>
             </div>
@@ -385,11 +362,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-    <script src="js/config.js?v=5"></script>
-    <script src="js/db.js?v=5"></script>
-    <script src="js/auth.js?v=5"></script>
-    <script src="js/engine.js?v=5"></script>
-    <script src="js/export.js?v=5"></script>
+    <script src="js/config.js?v=6"></script>
+    <script src="js/db.js?v=6"></script>
+    <script src="js/auth.js?v=6"></script>
+    <script src="js/engine.js?v=6"></script>
+    <script src="js/export.js?v=6"></script>
     
     <script>
         if ('serviceWorker' in navigator) {
