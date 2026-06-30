@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = "Fetching Data...";
         
         try {
+            // Fetch raw arrays independently to avoid join errors
             const flats = await DB.fetchFlats();
             const receipts = await DB.fetchReceiptsByDate(dateFrom.value, dateTo.value);
 
@@ -100,8 +101,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     flatReceipts.forEach(r => {
                         currentExportData.push({
-                            serial: serialCounter++, flat_no: flat.flat_no, owner: r.flats.owner_name,
-                            phone: r.flats.phone_number, base_fee: r.flats.usual_fee,
+                            // FIXED: Using flat object directly
+                            serial: serialCounter++, flat_no: flat.flat_no, owner: flat.owner_name,
+                            phone: flat.phone_number, base_fee: flat.usual_fee,
                             date: new Date(r.date).toLocaleDateString('en-GB'), receipt_no: r.receipt_no,
                             cash: Number(r.cash_amount), online: Number(r.online_amount), 
                             total: Number(r.total_amount), months: r.months_covered, remarks: r.remarks || ''
@@ -115,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (e) {
             console.error(e);
-            alert("Failed to compile report.");
+            alert("Failed to compile report. Check console for details.");
         } finally {
             btn.textContent = "Generate Preview";
         }
@@ -159,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.UX && window.UX.playClick) window.UX.playClick();
         
         if (typeof ExcelJS === 'undefined') {
-            alert("ExcelJS library is missing. Make sure it's loaded in index.html");
+            alert("ExcelJS library is missing or loading slowly. Try again in a moment.");
             return;
         }
 
@@ -210,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.UX && window.UX.playClick) window.UX.playClick();
         
         if (!window.jspdf) {
-            alert("jsPDF library is missing. Make sure it's loaded in index.html");
+            alert("jsPDF library is missing or loading slowly. Try again in a moment.");
             return;
         }
 
