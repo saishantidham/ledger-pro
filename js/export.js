@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let displayedRowsCount = 0;
     const CHUNK_SIZE = 100;
 
-    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v10')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
+    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v11')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
 
     const exportView = document.getElementById('export-view');
     const hubView = document.getElementById('hub-view');
@@ -53,14 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.col-toggle').forEach(chk => {
             chk.addEventListener('change', () => {
                 selectedCols = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb => cb.value);
-                localStorage.setItem('exportCols_v10', JSON.stringify(selectedCols));
+                localStorage.setItem('exportCols_v11', JSON.stringify(selectedCols));
                 if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
             });
         });
     }
 
     document.getElementById('reset-cols').onclick = () => {
-        localStorage.removeItem('exportCols_v10');
+        localStorage.removeItem('exportCols_v11');
         selectedCols = COLS.filter(c => c.default).map(c => c.id);
         initExportUI();
         if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
@@ -86,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return { building: 'Unknown', suffix: flatNoStr };
     }
 
-    // === NEW MASTER EXPORT SORTING ALGORITHM ===
     async function compileData() {
         const flats = await DB.fetchFlats();
         const receipts = await DB.fetchReceiptsByDate(dateFrom.value, dateTo.value);
@@ -129,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // The Magic Sorter
         rawData.sort((a, b) => {
             if (sortMethod === 'date') {
                 if (a.rawDate.getTime() !== b.rawDate.getTime()) return a.rawDate - b.rawDate;
@@ -139,11 +137,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (a.rawRcpt !== b.rawRcpt) return a.rawRcpt - b.rawRcpt;
                 return a.rawDate - b.rawDate;
             }
-            // default (flat): maintain flat order, then date
-            return 0; // Pre-sorted by DB flats query!
+            return 0; 
         });
 
-        // Finally, assign serials chronologically AFTER sorting
         currentExportData = rawData.map((row, index) => {
             row.serial = index + 1;
             return row;
@@ -262,16 +258,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'A4' }); 
         const activeCols = COLS.filter(c => selectedCols.includes(c.id));
 
-        const tableColumn = activeCols.map(c => c.label);
-        const tableRows = currentExportData.map(row => activeCols.map(c => row[c.id] !== '' ? row[c.id] : '-'));
+        // CRITICAL FIX: Replace '₹' with 'Rs.' purely for the PDF generation so Helvetica renders smoothly without falling back to Courier.
+        const tableColumn = activeCols.map(c => c.label.replace(/₹/g, 'Rs.'));
+        const tableRows = currentExportData.map(row => activeCols.map(c => {
+            let val = row[c.id] !== '' && row[c.id] !== null ? String(row[c.id]) : '-';
+            return val.replace(/₹/g, 'Rs.'); 
+        }));
 
         doc.setFontSize(14);
         doc.text(`Ledger Master Report (${dateFrom.value} to ${dateTo.value})`, 40, 40);
         
         doc.autoTable({
             head: [tableColumn], body: tableRows, startY: 50, theme: 'grid',
-            styles: { fontSize: 7, cellPadding: 4, textColor: [40, 40, 40], font: 'helvetica' },
-            headStyles: { fillColor: [242, 101, 34], textColor: [255,255,255], fontStyle: 'bold', halign: 'center' },
+            styles: { fontSize: 7, cellPadding: 5, textColor: [40, 40, 40], font: 'helvetica' }, // Added cellPadding: 5
+            // Ensure headers are vertically middle-aligned so the orange background looks clean
+            headStyles: { fillColor: [242, 101, 34], textColor: [255,255,255], fontStyle: 'bold', halign: 'center', valign: 'middle' },
             alternateRowStyles: { fillColor: [249, 250, 251] }, margin: { top: 40, left: 20, right: 20 },
             didParseCell: function(data) {
                 if (data.section === 'body' && activeCols[data.column.index].id === 'pending_amount') {
