@@ -1,30 +1,30 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // === EXPORT CONFIG & STATE ===
+    // === PROFESSIONAL EXPORT COLUMNS ===
     const COLS = [
-        { id: 'serial', label: 'Sr. no.', default: true },
-        { id: 'date', label: 'date', default: true },
-        { id: 'receipt_no', label: 'receipt number', default: true },
-        { id: 'building', label: 'building number', default: true },
+        { id: 'serial', label: 'Sr. No.', default: true },
+        { id: 'date', label: 'Date', default: true },
+        { id: 'receipt_no', label: 'Receipt No.', default: true },
+        { id: 'building', label: 'Building', default: true },
         { id: 'flat_suffix', label: 'Flat No.', default: true },
-        { id: 'owner_type', label: 'Owner / Renter', default: true },
-        { id: 'owner', label: 'owner name', default: true },
-        { id: 'phone', label: 'Phone number', default: false },
-        { id: 'base_fee', label: 'Per Flat Charge/total amount', default: true },
-        { id: 'cash', label: 'CASH', default: true },
-        { id: 'online', label: 'ONLINE', default: true },
-        { id: 'method', label: 'Payment method', default: true },
-        { id: 'total', label: 'total payed', default: true },
-        { id: 'months', label: 'Payed Months', default: true },
-        { id: 'months_count', label: 'Payed Months in number', default: true },
-        { id: 'pending_amount', label: 'pending amount', default: true },
-        { id: 'remarks', label: 'remarks', default: false }
+        { id: 'owner_type', label: 'Occupant', default: true }, // Fixed Renter/Owner logic
+        { id: 'owner', label: 'Name', default: true },
+        { id: 'phone', label: 'Phone', default: false },
+        { id: 'base_fee', label: 'Base Fee (₹)', default: true },
+        { id: 'cash', label: 'Cash (₹)', default: true },
+        { id: 'online', label: 'Online (₹)', default: true },
+        { id: 'method', label: 'Method', default: true },
+        { id: 'total', label: 'Total Paid (₹)', default: true },
+        { id: 'months', label: 'Months Covered', default: true },
+        { id: 'months_count', label: 'Months Count', default: true },
+        { id: 'pending_amount', label: 'Pending (₹)', default: true },
+        { id: 'remarks', label: 'Remarks', default: false }
     ];
 
     let currentExportData = [];
     let displayedRowsCount = 0;
     const CHUNK_SIZE = 100;
 
-    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v2')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
+    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v7')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
 
     const exportView = document.getElementById('export-view');
     const hubView = document.getElementById('hub-view');
@@ -54,14 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.col-toggle').forEach(chk => {
             chk.addEventListener('change', () => {
                 selectedCols = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb => cb.value);
-                localStorage.setItem('exportCols_v2', JSON.stringify(selectedCols));
+                localStorage.setItem('exportCols_v7', JSON.stringify(selectedCols));
                 if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
             });
         });
     }
 
     document.getElementById('reset-cols').onclick = () => {
-        localStorage.removeItem('exportCols_v2');
+        localStorage.removeItem('exportCols_v7');
         selectedCols = COLS.filter(c => c.default).map(c => c.id);
         initExportUI();
         if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
@@ -105,7 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!hideBlank) {
                     currentExportData.push({
                         serial: serialCounter++, building: flatParsed.building, flat_suffix: flatParsed.suffix,
-                        owner_type: flat.is_rented ? 'Renter' : '', owner: flat.owner_name, phone: flat.phone_number, base_fee: flat.usual_fee,
+                        owner_type: flat.is_rented ? 'Renter' : 'Owner', // FIXED: explicitly shows Owner
+                        owner: flat.owner_name, phone: flat.phone_number, base_fee: flat.usual_fee,
                         date: '', receipt_no: '', cash: '', online: '', method: '', total: '', months: '', months_count: '', pending_amount: '', remarks: ''
                     });
                 }
@@ -113,11 +114,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 flatReceipts.forEach(r => {
                     let cash = Number(r.cash_amount) || 0;
                     let online = Number(r.online_amount) || 0;
-                    let method = cash > 0 && online > 0 ? 'both' : (cash > 0 ? 'cash' : (online > 0 ? 'online' : ''));
+                    let method = cash > 0 && online > 0 ? 'Both' : (cash > 0 ? 'Cash' : (online > 0 ? 'Online' : ''));
 
                     currentExportData.push({
                         serial: serialCounter++, building: flatParsed.building, flat_suffix: flatParsed.suffix,
-                        owner_type: flat.is_rented ? 'Renter' : '', owner: flat.owner_name, phone: flat.phone_number, base_fee: flat.usual_fee,
+                        owner_type: flat.is_rented ? 'Renter' : 'Owner', // FIXED
+                        owner: flat.owner_name, phone: flat.phone_number, base_fee: flat.usual_fee,
                         date: new Date(r.date).toLocaleDateString('en-GB'), receipt_no: r.receipt_no,
                         cash: cash > 0 ? cash : '', online: online > 0 ? online : '', method: method,
                         total: Number(r.total_amount), months: r.months_covered, 
@@ -198,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sheet.columns = activeCols.map(c => ({
             header: c.label,
             key: c.id,
-            width: ['owner', 'remarks', 'months'].includes(c.id) ? 20 : 12
+            width: ['owner', 'remarks', 'months'].includes(c.id) ? 20 : 13
         }));
 
         const headerRow = sheet.getRow(1);
@@ -243,11 +245,9 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.save(`Ledger_Report_${dateFrom.value}_to_${dateTo.value}.pdf`);
     }
 
-    // Modal Buttons
     document.getElementById('btn-dl-excel').onclick = () => { if(window.UX) UX.playClick(); executeExcelExport(); };
     document.getElementById('btn-dl-pdf').onclick = () => { if(window.UX) UX.playClick(); executePDFExport(); };
 
-    // Direct Bulk Buttons
     document.getElementById('btn-direct-excel').onclick = async () => {
         if(window.UX) UX.playClick();
         const btn = document.getElementById('btn-direct-excel');
