@@ -47,7 +47,6 @@ window.UX = {
 document.addEventListener('DOMContentLoaded', () => {
     UX.init();
 
-    // === THE VIRTUAL KEYBOARD TRAP FIX ===
     function initKeyboardTrapFix() {
         if (!window.visualViewport) return;
         const workspace = document.getElementById('workspace-view');
@@ -67,13 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     initKeyboardTrapFix();
 
-    // === APP STATE ===
     let flatsData = [];
     let receiptsData = []; 
     let currentHubDate = new Date(); 
     let selectedSessionDate = new Date(); 
+    let currentCalculatedMonths = 0; // NEW: Track integer math
 
-    // === DOM ELEMENTS ===
     const views = { auth: document.getElementById('auth-view'), hub: document.getElementById('hub-view'), workspace: document.getElementById('workspace-view') };
     const calGrid = document.getElementById('calendar-grid');
     const calHeader = document.getElementById('cal-month-year');
@@ -98,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentSelectedFlatNo = null;
 
-    // === WHATSAPP TEMPLATE ENGINE ===
     const waMsgInput = document.getElementById('wa-default-msg');
     const defaultTemplate = "Hello {name},\nYour maintenance payment of ₹{amount} for Flat {flat} (Rcpt: {rcpt}) has been received successfully.\nReceipt: {link}\nThank you!";
     
@@ -117,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
-    // === RECEIPT AUTO-FETCH ENGINE ===
     function updateNextReceiptPlaceholder() {
         if (!receiptsData || receiptsData.length === 0) {
             D.rcptNo.placeholder = "Auto (14000)";
@@ -131,28 +127,20 @@ document.addEventListener('DOMContentLoaded', () => {
         D.rcptNo.placeholder = max > 0 ? `Auto (${max + 1})` : "Auto (14000)";
     }
 
-    // === EXPORTED ENGINE STARTUP ===
     window.loadHubData = async function() {
         try {
             flatsData = await DB.fetchFlats() || [];
-            
             const { data: rcpts, error } = await supabaseClient.from('receipts')
                 .select('*')
                 .order('created_at', { ascending: false });
                 
             if (error) throw error;
-            
             receiptsData = rcpts || [];
-            
             updateNextReceiptPlaceholder();
             renderCalendar();
 
-            // FIXED: Update the global Serial Number Display on Load
             const nextSerial = receiptsData.length > 0 ? Math.max(...receiptsData.map(r => Number(r.serial_no) || 0)) + 1 : 1;
-            if (serialDisplay) {
-                serialDisplay.textContent = `Entry #${nextSerial}`;
-            }
-            
+            if (serialDisplay) serialDisplay.textContent = `Entry #${nextSerial}`;
         } catch (err) {
             console.error("Database fetch error:", err);
         }
@@ -164,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     }
 
-    // === 1. HUB & CALENDAR ===
     document.getElementById('prev-month-btn')?.addEventListener('click', () => { currentHubDate.setMonth(currentHubDate.getMonth() - 1); renderCalendar(); });
     document.getElementById('next-month-btn')?.addEventListener('click', () => { currentHubDate.setMonth(currentHubDate.getMonth() + 1); renderCalendar(); });
 
@@ -205,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('stat-month').textContent = `₹${tMonth}`;
     }
 
-    // === 2. RECENT LOGS SHEET ===
     document.getElementById('view-recent-btn')?.addEventListener('click', () => {
         const sheet = document.getElementById('recent-logs-sheet');
         const list = document.getElementById('recent-logs-list');
@@ -253,7 +239,6 @@ document.addEventListener('DOMContentLoaded', () => {
         UX.playClick(); document.getElementById('recent-logs-sheet').classList.add('hidden'); switchView('workspace'); D.toggle.checked = true; D.toggle.dispatchEvent(new Event('change'));
     };
 
-    // === 3. WORKSPACE TRANSITION ===
     function openWorkspace(dateStr) {
         selectedSessionDate = new Date(dateStr);
         activeSessionDateDisplay.textContent = selectedSessionDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -264,7 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.getElementById('back-to-hub-btn').onclick = () => { switchView('hub'); window.loadHubData(); };
 
-    // === 4. FLAT SEARCH MODAL ===
     const searchModal = document.getElementById('flat-search-modal');
     const searchInput = document.getElementById('flat-search-input');
     const flatList = document.getElementById('flat-list');
@@ -296,7 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
         handleRentedToggle(flat.is_rented); searchModal.classList.add('hidden'); calculateMonths();
     }
 
-    // === 5. CUSTOM FORMATTING & CALCS ===
     function formatMonthStr(dateStr) {
         if(!dateStr) return 'MMM YYYY';
         return new Date(dateStr + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
@@ -329,9 +312,16 @@ document.addEventListener('DOMContentLoaded', () => {
     D.remarks.addEventListener('input', (e) => { D.charCount.textContent = `${e.target.value.length}/50`; });
 
     function calculateMonths() {
-        if (!D.mFromIn.value || !D.mToIn.value) return;
-        const d1 = new Date(D.mFromIn.value + '-01'); const d2 = new Date(D.mToIn.value + '-01');
+        if (!D.mFromIn.value || !D.mToIn.value) {
+            currentCalculatedMonths = 0;
+            return;
+        }
+        const d1 = new Date(D.mFromIn.value + '-01'); 
+        const d2 = new Date(D.mToIn.value + '-01');
+        
         let m = (d2.getFullYear() - d1.getFullYear()) * 12 - d1.getMonth() + d2.getMonth() + 1;
+        currentCalculatedMonths = m;
+        
         const fee = parseFloat(D.baseFee.value) || 0;
 
         if (m > 0) {
@@ -349,17 +339,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateTotal() { D.total.textContent = `₹${(parseFloat(D.cash.value) || 0) + (parseFloat(D.online.value) || 0)}`; }
     D.cash.addEventListener('input', calculateTotal); D.online.addEventListener('input', calculateTotal);
 
-    // === 6. SUBMIT ===
     form.addEventListener('submit', async () => {
         if (!currentSelectedFlatNo) { UX.vibrateError(); return alert("Select a flat first."); }
-        const cashAmt = parseFloat(D.cash.value) || 0; const onlineAmt = parseFloat(D.online.value) || 0; const totalAmt = cashAmt + onlineAmt;
+        const cashAmt = parseFloat(D.cash.value) || 0; 
+        const onlineAmt = parseFloat(D.online.value) || 0; 
+        const totalAmt = cashAmt + onlineAmt;
         if (totalAmt === 0) { UX.vibrateError(); return alert("Total cannot be zero."); }
+
+        // NEW LOGIC: Calculate pending amount for database
+        const baseFee = parseFloat(D.baseFee.value) || 0;
+        const expectedTotal = currentCalculatedMonths > 0 ? (currentCalculatedMonths * baseFee) : baseFee;
+        const pendingAmt = expectedTotal - totalAmt;
 
         document.getElementById('submit-receipt-btn').textContent = "Saving...";
 
         const rPayload = {
             flat_no: currentSelectedFlatNo, date: D.dateIn.value,
             months_covered: `${formatMonthStr(D.mFromIn.value)} to ${formatMonthStr(D.mToIn.value)}`,
+            months_count: currentCalculatedMonths > 0 ? currentCalculatedMonths : 1, // Fallback to 1
+            pending_amount: pendingAmt,
             cash_amount: cashAmt, online_amount: onlineAmt, remarks: D.remarks.value
         };
         if (D.toggle.checked && D.rcptNo.value) rPayload.receipt_no = D.rcptNo.value;
@@ -391,11 +389,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // === CONTINUOUS ENTRY MODE ===
     document.getElementById('modal-next-btn').onclick = async () => {
         successModal.classList.remove('visible');
         
         currentSelectedFlatNo = null;
+        currentCalculatedMonths = 0;
         D.flatBtn.classList.remove('selected'); D.flatBtnText.textContent = "Select Flat / Owner...";
         D.name.value = ""; D.phone.value = ""; D.baseFee.value = ""; D.isRented.checked = false;
         D.cash.value = ""; D.online.value = ""; D.total.textContent = "₹0";
@@ -416,7 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
         await window.loadHubData();
     };
 
-    // === PWA INSTALLATION ENGINE ===
     let deferredPrompt;
     const installBtn = document.getElementById('install-app-btn');
 
