@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <meta property="og:title" content="Ledger Pro | Maintenance Entry">
+    <meta property="og:description" content="Secure and efficient building maintenance portal.">
+    <meta property="og:image" content="og-banner.jpg">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+
     <title>Ledger Pro</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -67,11 +74,13 @@
         .uc-search-btn:active { background: rgba(0,0,0,0.05); }
         .uc-search-btn.selected { border-style: solid; border-color: var(--c-saffron); background: rgba(242, 101, 34, 0.05); }
         
-        .uc-checkbox-wrap { display: flex; align-items: center; gap: 8px; height: 36px; cursor: pointer; }
+        /* Compact Grid Toggles */
+        #column-toggles { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 6px; }
+        .uc-checkbox-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0; }
         .uc-checkbox-wrap input { display: none; }
-        .uc-checkbox-box { width: 18px; height: 18px; border: 2px solid rgba(0,0,0,0.15); border-radius: 4px; position: relative; transition: all 0.2s; background: #FAFAFA;}
+        .uc-checkbox-box { width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.15); border-radius: 4px; position: relative; transition: all 0.2s; background: #FAFAFA; flex-shrink: 0;}
         .uc-checkbox-wrap input:checked + .uc-checkbox-box { background: var(--c-saffron); border-color: var(--c-saffron); }
-        .uc-checkbox-wrap input:checked + .uc-checkbox-box::after { content: '✓'; color: #fff; position: absolute; font-size: 12px; left: 2px; top: -1px; font-weight: bold; }
+        .uc-checkbox-wrap input:checked + .uc-checkbox-box::after { content: '✓'; color: #fff; position: absolute; font-size: 11px; left: 1px; top: -1px; font-weight: bold; }
         
         .uc-month-calc-box { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; height: 36px; padding-left: 2px; }
         .calc-label { font-size: 10px; font-weight: 600; color: var(--c-muted); text-transform: uppercase; margin-bottom: 2px;}
@@ -91,6 +100,10 @@
         .uc-submit-btn:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(242, 101, 34, 0.3); }
         .action-tray { display: flex; gap: 6px; margin-top: 8px; }
         .btn-micro { background: var(--c-bg); border: 1px solid var(--c-border); border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: 500; color: var(--c-text); display: flex; align-items: center; gap: 4px; cursor: pointer;}
+        
+        /* Modal Height Increase */
+        .h-90 { height: 90dvh; }
+        .list-item { padding: 0.75rem 0; border-bottom: 1px solid rgba(0,0,0,0.06); cursor: pointer; transition: background 0.2s; }
     </style>
 </head>
 <body>
@@ -279,8 +292,17 @@
             </div>
 
             <div class="fluent-card mb-md">
-                <p class="text-sm font-semibold mb-sm flex-between"><span>2. Select Columns</span> <span class="text-xs text-saffron" id="reset-cols" style="cursor:pointer;">Reset</span></p>
-                <div id="column-toggles" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <p class="text-sm font-semibold mb-xs">2. Sort Data By</p>
+                <select id="export-sort-by" class="uc-input" style="background:#FFF;">
+                    <option value="flat">Building & Flat No. (Default)</option>
+                    <option value="date">Date (Chronological)</option>
+                    <option value="receipt">Receipt Number</option>
+                </select>
+            </div>
+
+            <div class="fluent-card mb-md">
+                <p class="text-sm font-semibold mb-sm flex-between"><span>3. Select Columns</span> <span class="text-xs text-saffron" id="reset-cols" style="cursor:pointer;">Reset</span></p>
+                <div id="column-toggles">
                     </div>
             </div>
 
@@ -295,13 +317,13 @@
     </main>
 
     <div id="flat-search-modal" class="bottom-sheet-overlay hidden">
-        <div class="bottom-sheet h-80">
+        <div class="bottom-sheet h-90">
             <div class="sheet-header">
                 <h3>Select Flat</h3>
                 <button id="close-flat-search" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
             <div class="relative search-box">
-                <input type="text" id="flat-search-input" class="uc-input" placeholder="Search..." style="padding-left: 2.5rem;">
+                <input type="text" id="flat-search-input" class="uc-input" placeholder="Search Flat (e.g. C306, Ramesh)..." style="padding-left: 2.5rem;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-muted)" stroke-width="2.5" style="position: absolute; left: 12px; top: 10px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </div>
             <ul id="flat-list" class="virtual-list"></ul>
@@ -336,7 +358,7 @@
     </div>
 
     <div id="recent-logs-sheet" class="bottom-sheet-overlay hidden">
-        <div class="bottom-sheet h-80">
+        <div class="bottom-sheet h-90">
             <div class="sheet-header">
                 <h3>Recent Entries</h3>
                 <button id="close-recent-btn" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
@@ -396,16 +418,15 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-    <script src="js/config.js?v=9"></script>
-    <script src="js/db.js?v=9"></script>
-    <script src="js/auth.js?v=9"></script>
-    <script src="js/engine.js?v=9"></script>
-    <script src="js/export.js?v=9"></script>
+    <script src="js/config.js?v=10"></script>
+    <script src="js/db.js?v=10"></script>
+    <script src="js/auth.js?v=10"></script>
+    <script src="js/engine.js?v=10"></script>
+    <script src="js/export.js?v=10"></script>
     
     <script>
         if ('serviceWorker' in navigator) {
