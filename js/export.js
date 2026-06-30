@@ -1,31 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
     // === EXPORT CONFIG & STATE ===
     const COLS = [
-        { id: 'serial', label: 'Sr. No.', default: true },
-        { id: 'date', label: 'Date', default: true },
-        { id: 'receipt_no', label: 'Receipt No.', default: true },
-        { id: 'flat_no', label: 'Flat No.', default: true },
-        { id: 'owner', label: 'Owner/Renter', default: true },
-        { id: 'phone', label: 'Phone', default: false },
-        { id: 'base_fee', label: 'Per Flat Charge', default: true },
-        { id: 'cash', label: 'Cash', default: true },
-        { id: 'online', label: 'Online', default: true },
-        { id: 'total', label: 'Total Paid', default: true },
-        { id: 'months', label: 'Months Covered', default: true },
-        { id: 'remarks', label: 'Remarks', default: false }
+        { id: 'serial', label: 'Sr. no.', default: true },
+        { id: 'date', label: 'date', default: true },
+        { id: 'receipt_no', label: 'receipt number', default: true },
+        { id: 'building', label: 'building number', default: true },
+        { id: 'flat_suffix', label: 'Flat No.', default: true },
+        { id: 'owner_type', label: 'Owner / Renter', default: true },
+        { id: 'owner', label: 'owner name', default: true },
+        { id: 'phone', label: 'Phone number', default: false },
+        { id: 'base_fee', label: 'Per Flat Charge/total amount', default: true },
+        { id: 'cash', label: 'CASH', default: true },
+        { id: 'online', label: 'ONLINE', default: true },
+        { id: 'method', label: 'Payment method', default: true },
+        { id: 'total', label: 'total payed', default: true },
+        { id: 'months', label: 'Payed Months', default: true },
+        { id: 'months_count', label: 'Payed Months in number', default: true },
+        { id: 'pending_amount', label: 'pending amount', default: true },
+        { id: 'remarks', label: 'remarks', default: false }
     ];
 
     let currentExportData = [];
-    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v1')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
+    let displayedRowsCount = 0;
+    const CHUNK_SIZE = 100;
 
-    // === DOM ELEMENTS ===
+    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v2')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
+
     const exportView = document.getElementById('export-view');
     const hubView = document.getElementById('hub-view');
     const toggleContainer = document.getElementById('column-toggles');
     const dateFrom = document.getElementById('export-date-from');
     const dateTo = document.getElementById('export-date-to');
     
-    // === INITIALIZATION ===
     function initExportUI() {
         const today = new Date();
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -48,20 +54,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.col-toggle').forEach(chk => {
             chk.addEventListener('change', () => {
                 selectedCols = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb => cb.value);
-                localStorage.setItem('exportCols_v1', JSON.stringify(selectedCols));
+                localStorage.setItem('exportCols_v2', JSON.stringify(selectedCols));
                 if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
             });
         });
     }
 
     document.getElementById('reset-cols').onclick = () => {
-        localStorage.removeItem('exportCols_v1');
+        localStorage.removeItem('exportCols_v2');
         selectedCols = COLS.filter(c => c.default).map(c => c.id);
         initExportUI();
         if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
     };
 
-    // === NAVIGATION ===
     document.getElementById('view-reports-btn').onclick = () => {
         if(window.UX && window.UX.playClick) window.UX.playClick();
         initExportUI();
@@ -75,96 +80,117 @@ document.addEventListener('DOMContentLoaded', () => {
         hubView.classList.replace('hidden-view', 'active-view');
     };
 
-    // === DATA MERGING LOGIC ===
+    function parseFlatDetails(flatNoStr) {
+        if (flatNoStr.startsWith('Shop')) return { building: 'Shop', suffix: flatNoStr.split('-')[1] };
+        const parts = flatNoStr.split('-');
+        if (parts.length > 1) {
+            return { building: parts.slice(0, -1).join(' '), suffix: parts[parts.length - 1] };
+        }
+        return { building: 'Unknown', suffix: flatNoStr };
+    }
+
+    async function compileData() {
+        const flats = await DB.fetchFlats();
+        const receipts = await DB.fetchReceiptsByDate(dateFrom.value, dateTo.value);
+        const hideBlank = document.getElementById('hide-blank-flats').checked;
+
+        currentExportData = [];
+        let serialCounter = 1;
+
+        flats.forEach(flat => {
+            const flatReceipts = receipts.filter(r => r.flat_no === flat.flat_no);
+            const flatParsed = parseFlatDetails(flat.flat_no);
+
+            if (flatReceipts.length === 0) {
+                if (!hideBlank) {
+                    currentExportData.push({
+                        serial: serialCounter++, building: flatParsed.building, flat_suffix: flatParsed.suffix,
+                        owner_type: flat.is_rented ? 'Renter' : '', owner: flat.owner_name, phone: flat.phone_number, base_fee: flat.usual_fee,
+                        date: '', receipt_no: '', cash: '', online: '', method: '', total: '', months: '', months_count: '', pending_amount: '', remarks: ''
+                    });
+                }
+            } else {
+                flatReceipts.forEach(r => {
+                    let cash = Number(r.cash_amount) || 0;
+                    let online = Number(r.online_amount) || 0;
+                    let method = cash > 0 && online > 0 ? 'both' : (cash > 0 ? 'cash' : (online > 0 ? 'online' : ''));
+
+                    currentExportData.push({
+                        serial: serialCounter++, building: flatParsed.building, flat_suffix: flatParsed.suffix,
+                        owner_type: flat.is_rented ? 'Renter' : '', owner: flat.owner_name, phone: flat.phone_number, base_fee: flat.usual_fee,
+                        date: new Date(r.date).toLocaleDateString('en-GB'), receipt_no: r.receipt_no,
+                        cash: cash > 0 ? cash : '', online: online > 0 ? online : '', method: method,
+                        total: Number(r.total_amount), months: r.months_covered, 
+                        months_count: r.months_count, pending_amount: r.pending_amount, remarks: r.remarks || ''
+                    });
+                });
+            }
+        });
+    }
+
     document.getElementById('btn-generate-preview').onclick = async () => {
         if(window.UX && window.UX.playClick) window.UX.playClick();
         const btn = document.getElementById('btn-generate-preview');
         btn.textContent = "Fetching Data...";
-        
         try {
-            // Fetch raw arrays independently to avoid join errors
-            const flats = await DB.fetchFlats();
-            const receipts = await DB.fetchReceiptsByDate(dateFrom.value, dateTo.value);
+            await compileData();
+            displayedRowsCount = 0;
+            const thead = document.getElementById('preview-thead');
+            const tbody = document.getElementById('preview-tbody');
+            thead.innerHTML = ''; tbody.innerHTML = '';
 
-            currentExportData = [];
-            let serialCounter = 1;
+            const activeCols = COLS.filter(c => selectedCols.includes(c.id));
+            let trHead = '<tr>';
+            activeCols.forEach(c => trHead += `<th style="padding:8px; text-align:left; border-bottom:2px solid #ddd; white-space:nowrap;">${c.label}</th>`);
+            trHead += '</tr>';
+            thead.innerHTML = trHead;
 
-            flats.forEach(flat => {
-                const flatReceipts = receipts.filter(r => r.flat_no === flat.flat_no);
-
-                if (flatReceipts.length === 0) {
-                    currentExportData.push({
-                        serial: serialCounter++, flat_no: flat.flat_no, owner: flat.owner_name,
-                        phone: flat.phone_number, base_fee: flat.usual_fee,
-                        date: '', receipt_no: '', cash: 0, online: 0, total: 0, months: '', remarks: ''
-                    });
-                } else {
-                    flatReceipts.forEach(r => {
-                        currentExportData.push({
-                            // FIXED: Using flat object directly
-                            serial: serialCounter++, flat_no: flat.flat_no, owner: flat.owner_name,
-                            phone: flat.phone_number, base_fee: flat.usual_fee,
-                            date: new Date(r.date).toLocaleDateString('en-GB'), receipt_no: r.receipt_no,
-                            cash: Number(r.cash_amount), online: Number(r.online_amount), 
-                            total: Number(r.total_amount), months: r.months_covered, remarks: r.remarks || ''
-                        });
-                    });
-                }
-            });
-
-            renderPreviewTable();
+            renderNextChunk();
             document.getElementById('preview-modal-overlay').classList.remove('hidden');
 
         } catch (e) {
-            console.error(e);
-            alert("Failed to compile report. Check console for details.");
+            console.error(e); alert("Failed to compile report.");
         } finally {
-            btn.textContent = "Generate Preview";
+            btn.textContent = "Generate Quick Preview";
         }
     };
 
-    document.getElementById('close-preview-btn').onclick = () => {
-        document.getElementById('preview-modal-overlay').classList.add('hidden');
+    document.getElementById('btn-load-more').onclick = () => {
+        renderNextChunk();
     };
 
-    // === RENDER HTML PREVIEW ===
-    function renderPreviewTable() {
-        const thead = document.getElementById('preview-thead');
+    function renderNextChunk() {
         const tbody = document.getElementById('preview-tbody');
-        thead.innerHTML = ''; tbody.innerHTML = '';
-
         const activeCols = COLS.filter(c => selectedCols.includes(c.id));
-        let trHead = '<tr>';
-        activeCols.forEach(c => trHead += `<th style="padding:8px; text-align:left; border-bottom:2px solid #ddd; white-space:nowrap;">${c.label}</th>`);
-        trHead += '</tr>';
-        thead.innerHTML = trHead;
-
-        const previewLimit = currentExportData.slice(0, 100);
-        previewLimit.forEach(row => {
+        const chunk = currentExportData.slice(displayedRowsCount, displayedRowsCount + CHUNK_SIZE);
+        
+        chunk.forEach(row => {
             let tr = '<tr style="border-bottom:1px solid #eee;">';
             activeCols.forEach(c => {
                 let val = row[c.id];
-                if (['cash', 'online', 'total', 'base_fee'].includes(c.id) && val > 0) val = `₹${val}`;
-                tr += `<td style="padding:8px; white-space:nowrap;">${val || '-'}</td>`;
+                tr += `<td style="padding:8px; white-space:nowrap;">${val !== '' && val !== null ? val : ''}</td>`;
             });
             tr += '</tr>';
             tbody.innerHTML += tr;
         });
 
-        if (currentExportData.length > 100) {
-            tbody.innerHTML += `<tr><td colspan="${activeCols.length}" style="text-align:center; padding:12px; color:#888;">... showing first 100 rows. Export to see all ${currentExportData.length} entries.</td></tr>`;
+        displayedRowsCount += chunk.length;
+        const loadMoreBtn = document.getElementById('preview-load-more');
+        if (displayedRowsCount < currentExportData.length) {
+            loadMoreBtn.style.display = 'block';
+        } else {
+            loadMoreBtn.style.display = 'none';
         }
     }
 
-    // === EXCEL GENERATION ===
-    document.getElementById('btn-dl-excel').onclick = async () => {
-        if(window.UX && window.UX.playClick) window.UX.playClick();
-        
-        if (typeof ExcelJS === 'undefined') {
-            alert("ExcelJS library is missing or loading slowly. Try again in a moment.");
-            return;
-        }
+    document.getElementById('close-preview-btn').onclick = () => {
+        document.getElementById('preview-modal-overlay').classList.add('hidden');
+    };
 
+    // === DIRECT & MODAL EXPORTS ===
+    async function executeExcelExport() {
+        if (typeof ExcelJS === 'undefined') return alert("ExcelJS is loading. Please wait 2 seconds.");
+        
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Master Report');
         const activeCols = COLS.filter(c => selectedCols.includes(c.id));
@@ -175,28 +201,16 @@ document.addEventListener('DOMContentLoaded', () => {
             width: ['owner', 'remarks', 'months'].includes(c.id) ? 20 : 12
         }));
 
-        sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-        sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF333333' } };
-
-        currentExportData.forEach(rowData => {
-            sheet.addRow(rowData);
-        });
-
-        const lastRowIdx = currentExportData.length + 1;
-        const footerRowIdx = lastRowIdx + 1;
-        const footerRow = sheet.getRow(footerRowIdx);
+        const headerRow = sheet.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.alignment = { horizontal: 'center' };
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
         
-        footerRow.getCell(1).value = "TOTAL";
-        footerRow.font = { bold: true };
+        currentExportData.forEach(rowData => sheet.addRow(rowData));
 
-        activeCols.forEach((col, index) => {
-            const colLetter = sheet.getColumn(index + 1).letter;
-            if (['cash', 'online', 'total'].includes(col.id)) {
-                footerRow.getCell(index + 1).value = {
-                    formula: `SUM(${colLetter}2:${colLetter}${lastRowIdx})`
-                };
-                footerRow.getCell(index + 1).numFmt = '₹#,##0.00';
-            }
+        sheet.eachRow((row, rowNumber) => {
+            row.eachCell((cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; });
+            if (rowNumber > 1 && rowNumber % 2 === 0) row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9F9F9' } };
         });
 
         const buffer = await workbook.xlsx.writeBuffer();
@@ -205,45 +219,50 @@ document.addEventListener('DOMContentLoaded', () => {
         link.href = URL.createObjectURL(blob);
         link.download = `Ledger_Report_${dateFrom.value}_to_${dateTo.value}.xlsx`;
         link.click();
-    };
+    }
 
-    // === PDF GENERATION ===
-    document.getElementById('btn-dl-pdf').onclick = () => {
-        if(window.UX && window.UX.playClick) window.UX.playClick();
-        
-        if (!window.jspdf) {
-            alert("jsPDF library is missing or loading slowly. Try again in a moment.");
-            return;
-        }
-
+    function executePDFExport() {
+        if (!window.jspdf) return alert("jsPDF is loading. Please wait 2 seconds.");
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'landscape' }); 
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'A4' }); 
         const activeCols = COLS.filter(c => selectedCols.includes(c.id));
 
         const tableColumn = activeCols.map(c => c.label);
-        const tableRows = [];
-
-        currentExportData.forEach(row => {
-            const rowData = activeCols.map(c => {
-                let val = row[c.id];
-                return (['cash', 'online', 'total', 'base_fee'].includes(c.id) && val > 0) ? `Rs.${val}` : (val || '-');
-            });
-            tableRows.push(rowData);
-        });
+        const tableRows = currentExportData.map(row => activeCols.map(c => row[c.id] !== '' ? row[c.id] : '-'));
 
         doc.setFontSize(14);
-        doc.text(`Ledger Master Report (${dateFrom.value} to ${dateTo.value})`, 14, 15);
+        doc.text(`Ledger Master Report (${dateFrom.value} to ${dateTo.value})`, 40, 40);
         
         doc.autoTable({
-            head: [tableColumn],
-            body: tableRows,
-            startY: 20,
-            styles: { fontSize: 8, cellPadding: 2 },
-            headStyles: { fillColor: [242, 101, 34] },
-            alternateRowStyles: { fillColor: [250, 250, 250] },
-            margin: { top: 20 }
+            head: [tableColumn], body: tableRows, startY: 50,
+            styles: { fontSize: 7, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.5 },
+            headStyles: { fillColor: [242, 101, 34], textColor: [255,255,255], fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [250, 250, 250] }, margin: { top: 40 }
         });
 
         doc.save(`Ledger_Report_${dateFrom.value}_to_${dateTo.value}.pdf`);
+    }
+
+    // Modal Buttons
+    document.getElementById('btn-dl-excel').onclick = () => { if(window.UX) UX.playClick(); executeExcelExport(); };
+    document.getElementById('btn-dl-pdf').onclick = () => { if(window.UX) UX.playClick(); executePDFExport(); };
+
+    // Direct Bulk Buttons
+    document.getElementById('btn-direct-excel').onclick = async () => {
+        if(window.UX) UX.playClick();
+        const btn = document.getElementById('btn-direct-excel');
+        btn.textContent = "Processing...";
+        await compileData();
+        await executeExcelExport();
+        btn.textContent = "Direct Excel";
+    };
+
+    document.getElementById('btn-direct-pdf').onclick = async () => {
+        if(window.UX) UX.playClick();
+        const btn = document.getElementById('btn-direct-pdf');
+        btn.textContent = "Processing...";
+        await compileData();
+        executePDFExport();
+        btn.textContent = "Direct PDF";
     };
 });
