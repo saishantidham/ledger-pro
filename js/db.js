@@ -25,7 +25,6 @@ const DB = {
         return data[0];
     },
 
-    // NEW: Updates the master flat record with new owner/fee details
     async updateFlatMaster(flatNo, updates) {
         const { data, error } = await supabaseClient
             .from('flats')
@@ -38,5 +37,24 @@ const DB = {
             throw error;
         }
         return data[0];
+    },
+
+    async fetchReceiptsByDate(startDate, endDate) {
+        const { data, error } = await supabaseClient
+            .from('receipts')
+            .select(`
+                *,
+                flats (owner_name, phone_number, usual_fee, is_rented)
+            `)
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('flat_no', { ascending: true })
+            .order('date', { ascending: true });
+            
+        if (error) {
+            console.error("Error fetching dated receipts:", error);
+            throw error;
+        }
+        return data;
     }
 };
