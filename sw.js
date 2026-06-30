@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ledger-pro-v5'; // Bumped version
+const CACHE_NAME = 'ledger-pro-v7'; // Bumped to force complete refresh
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
