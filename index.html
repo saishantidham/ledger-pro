@@ -19,6 +19,8 @@
     <link rel="stylesheet" href="css/modal.css">
 
     <style>
+        .hidden { display: none !important; opacity: 0; pointer-events: none; }
+        
         #workspace-view {
             height: 100dvh !important; display: flex; flex-direction: column;
             overflow: hidden !important; background: var(--c-bg); transition: height 0.1s ease-out; 
@@ -306,6 +308,43 @@
         </div>
     </div>
 
+    <div id="settings-sheet" class="bottom-sheet-overlay hidden">
+        <div class="bottom-sheet">
+            <div class="sheet-header">
+                <h3>Settings</h3>
+                <button id="close-settings-btn" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            
+            <div class="flex-between mt-lg">
+                <span class="font-semibold">Haptic Feedback (Vibration)</span>
+                <label class="switch-mini"><input type="checkbox" id="toggle-haptics" checked><span class="slider-mini"></span></label>
+            </div>
+            <div class="flex-between mt-lg">
+                <span class="font-semibold">App Sounds</span>
+                <label class="switch-mini"><input type="checkbox" id="toggle-sounds" checked><span class="slider-mini"></span></label>
+            </div>
+            
+            <div class="mt-lg mb-lg">
+                <span class="font-semibold text-sm">WhatsApp Default Message</span>
+                <textarea id="wa-default-msg" class="uc-input mt-xs" style="height: 70px; padding: 10px; resize: none; font-size: 12px; line-height: 1.4;"></textarea>
+                <p class="text-xs text-muted mt-sm" style="font-weight: 500;">Tags: {name}, {amount}, {flat}, {rcpt}, {link}</p>
+            </div>
+            
+            <button id="install-app-btn" class="btn-primary full-width mb-md hidden" style="background: var(--c-success); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">⬇️ Install App to Device</button>
+            <button id="logout-btn" class="btn-secondary full-width" style="color: var(--c-error); border-color: var(--c-error);">Logout Session</button>
+        </div>
+    </div>
+
+    <div id="recent-logs-sheet" class="bottom-sheet-overlay hidden">
+        <div class="bottom-sheet h-80">
+            <div class="sheet-header">
+                <h3>Recent Entries</h3>
+                <button id="close-recent-btn" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            <ul id="recent-logs-list" class="virtual-list"></ul>
+        </div>
+    </div>
+
     <div id="preview-modal-overlay" class="bottom-sheet-overlay hidden">
         <div class="bottom-sheet" style="height: 95dvh; padding: 0; background: var(--c-bg);">
             <div class="workspace-header" style="border-radius: 24px 24px 0 0;">
@@ -331,7 +370,7 @@
         </div>
     </div>
 
-    <div id="success-modal-overlay" class="modal-overlay">
+    <div id="success-modal-overlay" class="modal-overlay hidden">
         <div class="fluent-modal">
             <div class="success-icon-ring">
                 <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52"><circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/><path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg>
@@ -357,15 +396,16 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-    <script src="js/config.js?v=7"></script>
-    <script src="js/db.js?v=7"></script>
-    <script src="js/auth.js?v=7"></script>
-    <script src="js/engine.js?v=7"></script>
-    <script src="js/export.js?v=7"></script>
+    <script src="js/config.js?v=8"></script>
+    <script src="js/db.js?v=8"></script>
+    <script src="js/auth.js?v=8"></script>
+    <script src="js/engine.js?v=8"></script>
+    <script src="js/export.js?v=8"></script>
     
     <script>
         if ('serviceWorker' in navigator) {
