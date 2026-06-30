@@ -93,7 +93,6 @@
 </head>
 <body>
 
-    <!-- Auth View -->
     <main id="auth-view" class="view active-view">
         <div class="login-card">
             <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -108,7 +107,6 @@
         </div>
     </main>
 
-    <!-- Hub View -->
     <main id="hub-view" class="view hidden-view screen-lock">
         <div class="hub-wrapper">
             <header class="hub-header">
@@ -149,7 +147,6 @@
         </div>
     </main>
 
-    <!-- Workspace View -->
     <main id="workspace-view" class="view hidden-view">
         <header class="workspace-header">
             <button id="back-to-hub-btn" class="icon-btn" style="width:32px; height:32px;">
@@ -249,7 +246,41 @@
         </form>
     </main>
 
-    <!-- Modals -->
+    <main id="export-view" class="view hidden-view screen-lock">
+        <header class="workspace-header">
+            <button id="back-from-export-btn" class="icon-btn" style="width:32px; height:32px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
+            <div class="workspace-title"><h3 style="font-size: 16px;">Master Report</h3></div>
+            <div style="width: 32px;"></div>
+        </header>
+
+        <div class="ultra-compact-form" style="padding: 1.5rem;">
+            <div class="fluent-card highlight-border mb-md">
+                <p class="text-sm font-semibold mb-sm">1. Select Date Range</p>
+                <div class="uc-row">
+                    <div>
+                        <label class="uc-label">From</label>
+                        <input type="date" id="export-date-from" class="uc-input">
+                    </div>
+                    <div>
+                        <label class="uc-label">To</label>
+                        <input type="date" id="export-date-to" class="uc-input">
+                    </div>
+                </div>
+            </div>
+
+            <div class="fluent-card mb-md">
+                <p class="text-sm font-semibold mb-sm flex-between"><span>2. Select Columns</span> <span class="text-xs text-saffron" id="reset-cols" style="cursor:pointer;">Reset</span></p>
+                <div id="column-toggles" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    </div>
+            </div>
+
+            <div class="flex-spacer"></div>
+            <button id="btn-generate-preview" class="btn-primary full-width mt-lg">Generate Preview</button>
+        </div>
+    </main>
+
     <div id="flat-search-modal" class="bottom-sheet-overlay hidden">
         <div class="bottom-sheet h-80">
             <div class="sheet-header">
@@ -301,6 +332,28 @@
         </div>
     </div>
 
+    <div id="preview-modal-overlay" class="bottom-sheet-overlay hidden">
+        <div class="bottom-sheet" style="height: 95dvh; padding: 0; background: var(--c-bg);">
+            <div class="workspace-header" style="border-radius: 24px 24px 0 0;">
+                <button id="close-preview-btn" class="icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                <h3 style="font-size: 15px;">Data Preview</h3>
+                <div style="width:32px;"></div>
+            </div>
+            
+            <div style="flex: 1; overflow: auto; padding: 1rem; -webkit-overflow-scrolling: touch;">
+                <table id="preview-table" style="width: 100%; border-collapse: collapse; font-size: 11px; background: #fff; box-shadow: var(--shadow-soft);">
+                    <thead id="preview-thead" style="background: var(--c-surface); position: sticky; top: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></thead>
+                    <tbody id="preview-tbody"></tbody>
+                </table>
+            </div>
+
+            <div style="padding: 1rem; background: #fff; border-top: 1px solid var(--c-border); display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button id="btn-dl-pdf" class="btn-secondary" style="color: #D32F2F; border-color: #D32F2F;">PDF Document</button>
+                <button id="btn-dl-excel" class="btn-secondary" style="color: #2E7D32; border-color: #2E7D32;">Excel Sheet</button>
+            </div>
+        </div>
+    </div>
+
     <div id="success-modal-overlay" class="modal-overlay">
         <div class="fluent-modal">
             <div class="success-icon-ring">
@@ -327,10 +380,16 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js?v=3"></script>
-    <script src="js/db.js?v=3"></script>
-    <script src="js/auth.js?v=3"></script>
-    <script src="js/engine.js?v=3"></script>
+    
+    <script src="lib/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <script src="js/config.js?v=4"></script>
+    <script src="js/db.js?v=4"></script>
+    <script src="js/auth.js?v=4"></script>
+    <script src="js/engine.js?v=4"></script>
+    <script src="js/export.js?v=4"></script>
     
     <script>
         if ('serviceWorker' in navigator) {
