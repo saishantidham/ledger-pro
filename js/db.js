@@ -40,12 +40,10 @@ const DB = {
     },
 
     async fetchReceiptsByDate(startDate, endDate) {
+        // Simplified query: Fetching just the receipts. No complex joins required.
         const { data, error } = await supabaseClient
             .from('receipts')
-            .select(`
-                *,
-                flats (owner_name, phone_number, usual_fee, is_rented)
-            `)
+            .select('*')
             .gte('date', startDate)
             .lte('date', endDate)
             .order('flat_no', { ascending: true })
