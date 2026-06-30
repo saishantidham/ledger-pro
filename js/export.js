@@ -1,12 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // === PROFESSIONAL EXPORT COLUMNS ===
     const COLS = [
         { id: 'serial', label: 'Sr. No.', default: true },
         { id: 'date', label: 'Date', default: true },
         { id: 'receipt_no', label: 'Receipt No.', default: true },
         { id: 'building', label: 'Building', default: true },
         { id: 'flat_suffix', label: 'Flat No.', default: true },
-        { id: 'owner_type', label: 'Occupant', default: true }, // Fixed Renter/Owner logic
+        { id: 'owner_type', label: 'Occupant', default: true },
         { id: 'owner', label: 'Name', default: true },
         { id: 'phone', label: 'Phone', default: false },
         { id: 'base_fee', label: 'Base Fee (₹)', default: true },
@@ -24,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let displayedRowsCount = 0;
     const CHUNK_SIZE = 100;
 
-    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v7')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
+    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v8')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
 
     const exportView = document.getElementById('export-view');
     const hubView = document.getElementById('hub-view');
@@ -54,14 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.col-toggle').forEach(chk => {
             chk.addEventListener('change', () => {
                 selectedCols = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb => cb.value);
-                localStorage.setItem('exportCols_v7', JSON.stringify(selectedCols));
+                localStorage.setItem('exportCols_v8', JSON.stringify(selectedCols));
                 if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
             });
         });
     }
 
     document.getElementById('reset-cols').onclick = () => {
-        localStorage.removeItem('exportCols_v7');
+        localStorage.removeItem('exportCols_v8');
         selectedCols = COLS.filter(c => c.default).map(c => c.id);
         initExportUI();
         if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
@@ -105,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!hideBlank) {
                     currentExportData.push({
                         serial: serialCounter++, building: flatParsed.building, flat_suffix: flatParsed.suffix,
-                        owner_type: flat.is_rented ? 'Renter' : 'Owner', // FIXED: explicitly shows Owner
+                        owner_type: flat.is_rented ? 'Renter' : 'Owner',
                         owner: flat.owner_name, phone: flat.phone_number, base_fee: flat.usual_fee,
                         date: '', receipt_no: '', cash: '', online: '', method: '', total: '', months: '', months_count: '', pending_amount: '', remarks: ''
                     });
@@ -118,12 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     currentExportData.push({
                         serial: serialCounter++, building: flatParsed.building, flat_suffix: flatParsed.suffix,
-                        owner_type: flat.is_rented ? 'Renter' : 'Owner', // FIXED
+                        owner_type: flat.is_rented ? 'Renter' : 'Owner',
                         owner: flat.owner_name, phone: flat.phone_number, base_fee: flat.usual_fee,
                         date: new Date(r.date).toLocaleDateString('en-GB'), receipt_no: r.receipt_no,
                         cash: cash > 0 ? cash : '', online: online > 0 ? online : '', method: method,
                         total: Number(r.total_amount), months: r.months_covered, 
-                        months_count: r.months_count, pending_amount: r.pending_amount, remarks: r.remarks || ''
+                        months_count: r.months_count, pending_amount: Number(r.pending_amount) || 0, remarks: r.remarks || ''
                     });
                 });
             }
@@ -157,9 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    document.getElementById('btn-load-more').onclick = () => {
-        renderNextChunk();
-    };
+    document.getElementById('btn-load-more').onclick = () => renderNextChunk();
 
     function renderNextChunk() {
         const tbody = document.getElementById('preview-tbody');
@@ -170,6 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
             let tr = '<tr style="border-bottom:1px solid #eee;">';
             activeCols.forEach(c => {
                 let val = row[c.id];
+                
+                // FIXED: Color coding the pending amount for the preview table
+                if (c.id === 'pending_amount' && val !== '') {
+                    if (val > 0) val = `<span style="color: #D32F2F; font-weight: bold;">₹${val}</span>`;
+                    else if (val < 0) val = `<span style="color: #2E7D32; font-weight: bold;">+₹${Math.abs(val)} (Adv)</span>`;
+                    else val = '₹0';
+                }
+
                 tr += `<td style="padding:8px; white-space:nowrap;">${val !== '' && val !== null ? val : ''}</td>`;
             });
             tr += '</tr>';
@@ -178,18 +183,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         displayedRowsCount += chunk.length;
         const loadMoreBtn = document.getElementById('preview-load-more');
-        if (displayedRowsCount < currentExportData.length) {
-            loadMoreBtn.style.display = 'block';
-        } else {
-            loadMoreBtn.style.display = 'none';
-        }
+        if (displayedRowsCount < currentExportData.length) loadMoreBtn.style.display = 'block';
+        else loadMoreBtn.style.display = 'none';
     }
 
-    document.getElementById('close-preview-btn').onclick = () => {
-        document.getElementById('preview-modal-overlay').classList.add('hidden');
-    };
+    document.getElementById('close-preview-btn').onclick = () => document.getElementById('preview-modal-overlay').classList.add('hidden');
 
-    // === DIRECT & MODAL EXPORTS ===
+    // === EXCEL EXPORT (Red/Green Logic added) ===
     async function executeExcelExport() {
         if (typeof ExcelJS === 'undefined') return alert("ExcelJS is loading. Please wait 2 seconds.");
         
@@ -208,11 +208,32 @@ document.addEventListener('DOMContentLoaded', () => {
         headerRow.alignment = { horizontal: 'center' };
         headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
         
-        currentExportData.forEach(rowData => sheet.addRow(rowData));
+        currentExportData.forEach(rowData => {
+            const row = sheet.addRow(rowData);
+            // Color code Pending column
+            if (selectedCols.includes('pending_amount')) {
+                const cell = row.getCell('pending_amount');
+                if (cell.value > 0) { cell.font = { color: { argb: 'FFD32F2F' }, bold: true }; } // Due Red
+                else if (cell.value < 0) { cell.font = { color: { argb: 'FF2E7D32' }, bold: true }; } // Adv Green
+            }
+        });
 
         sheet.eachRow((row, rowNumber) => {
             row.eachCell((cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; });
             if (rowNumber > 1 && rowNumber % 2 === 0) row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9F9F9' } };
+        });
+
+        // Add formula row at the bottom
+        const lastRowIdx = currentExportData.length + 1;
+        const footerRow = sheet.getRow(lastRowIdx + 1);
+        footerRow.getCell(1).value = "TOTAL";
+        footerRow.font = { bold: true };
+        
+        activeCols.forEach((col, index) => {
+            const colLetter = sheet.getColumn(index + 1).letter;
+            if (['cash', 'online', 'total', 'pending_amount'].includes(col.id)) {
+                footerRow.getCell(index + 1).value = { formula: `SUM(${colLetter}2:${colLetter}${lastRowIdx})` };
+            }
         });
 
         const buffer = await workbook.xlsx.writeBuffer();
@@ -223,6 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         link.click();
     }
 
+    // === PDF EXPORT (Chef's Kiss Professional UI) ===
     function executePDFExport() {
         if (!window.jspdf) return alert("jsPDF is loading. Please wait 2 seconds.");
         const { jsPDF } = window.jspdf;
@@ -237,9 +259,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         doc.autoTable({
             head: [tableColumn], body: tableRows, startY: 50,
-            styles: { fontSize: 7, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.5 },
-            headStyles: { fillColor: [242, 101, 34], textColor: [255,255,255], fontStyle: 'bold' },
-            alternateRowStyles: { fillColor: [250, 250, 250] }, margin: { top: 40 }
+            theme: 'grid', // Upgraded theme
+            styles: { fontSize: 7, cellPadding: 4, textColor: [40, 40, 40], font: 'helvetica' },
+            headStyles: { fillColor: [242, 101, 34], textColor: [255,255,255], fontStyle: 'bold', halign: 'center' },
+            alternateRowStyles: { fillColor: [249, 250, 251] },
+            margin: { top: 40, left: 20, right: 20 },
+            didParseCell: function(data) {
+                if (data.section === 'body' && activeCols[data.column.index].id === 'pending_amount') {
+                    let val = parseFloat(data.cell.raw);
+                    if (val > 0) { data.cell.styles.textColor = [211, 47, 47]; data.cell.styles.fontStyle = 'bold'; }
+                    if (val < 0) { data.cell.styles.textColor = [46, 125, 50]; data.cell.styles.fontStyle = 'bold'; }
+                }
+            }
         });
 
         doc.save(`Ledger_Report_${dateFrom.value}_to_${dateTo.value}.pdf`);
