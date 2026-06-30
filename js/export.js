@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let displayedRowsCount = 0;
     const CHUNK_SIZE = 100;
 
-    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v8')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
+    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v10')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
 
     const exportView = document.getElementById('export-view');
     const hubView = document.getElementById('hub-view');
@@ -41,10 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
         COLS.forEach(col => {
             const isChecked = selectedCols.includes(col.id) ? 'checked' : '';
             const html = `
-                <label class="uc-checkbox-wrap" style="height: auto; padding: 6px 0;">
+                <label class="uc-checkbox-wrap">
                     <input type="checkbox" value="${col.id}" class="col-toggle" ${isChecked}>
                     <span class="uc-checkbox-box"></span>
-                    <span class="uc-label" style="margin:0; text-transform:none; font-size:12px;">${col.label}</span>
+                    <span class="uc-label" style="margin:0; text-transform:none;">${col.label}</span>
                 </label>
             `;
             toggleContainer.insertAdjacentHTML('beforeend', html);
@@ -53,14 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.col-toggle').forEach(chk => {
             chk.addEventListener('change', () => {
                 selectedCols = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb => cb.value);
-                localStorage.setItem('exportCols_v8', JSON.stringify(selectedCols));
+                localStorage.setItem('exportCols_v10', JSON.stringify(selectedCols));
                 if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
             });
         });
     }
 
     document.getElementById('reset-cols').onclick = () => {
-        localStorage.removeItem('exportCols_v8');
+        localStorage.removeItem('exportCols_v10');
         selectedCols = COLS.filter(c => c.default).map(c => c.id);
         initExportUI();
         if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
@@ -82,19 +82,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function parseFlatDetails(flatNoStr) {
         if (flatNoStr.startsWith('Shop')) return { building: 'Shop', suffix: flatNoStr.split('-')[1] };
         const parts = flatNoStr.split('-');
-        if (parts.length > 1) {
-            return { building: parts.slice(0, -1).join(' '), suffix: parts[parts.length - 1] };
-        }
+        if (parts.length > 1) return { building: parts.slice(0, -1).join(' '), suffix: parts[parts.length - 1] };
         return { building: 'Unknown', suffix: flatNoStr };
     }
 
+    // === NEW MASTER EXPORT SORTING ALGORITHM ===
     async function compileData() {
         const flats = await DB.fetchFlats();
         const receipts = await DB.fetchReceiptsByDate(dateFrom.value, dateTo.value);
         const hideBlank = document.getElementById('hide-blank-flats').checked;
+        const sortMethod = document.getElementById('export-sort-by').value;
 
-        currentExportData = [];
-        let serialCounter = 1;
+        let rawData = [];
 
         flats.forEach(flat => {
             const flatReceipts = receipts.filter(r => r.flat_no === flat.flat_no);
@@ -102,11 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (flatReceipts.length === 0) {
                 if (!hideBlank) {
-                    currentExportData.push({
-                        serial: serialCounter++, building: flatParsed.building, flat_suffix: flatParsed.suffix,
+                    rawData.push({
+                        building: flatParsed.building, flat_suffix: flatParsed.suffix,
                         owner_type: flat.is_rented ? 'Renter' : 'Owner',
                         owner: flat.owner_name, phone: flat.phone_number, base_fee: flat.usual_fee,
-                        date: '', receipt_no: '', cash: '', online: '', method: '', total: '', months: '', months_count: '', pending_amount: '', remarks: ''
+                        date: '', receipt_no: '', cash: '', online: '', method: '', total: '', months: '', months_count: '', pending_amount: '', remarks: '',
+                        rawDate: new Date(0), rawRcpt: 0 
                     });
                 }
             } else {
@@ -115,17 +115,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     let online = Number(r.online_amount) || 0;
                     let method = cash > 0 && online > 0 ? 'Both' : (cash > 0 ? 'Cash' : (online > 0 ? 'Online' : ''));
 
-                    currentExportData.push({
-                        serial: serialCounter++, building: flatParsed.building, flat_suffix: flatParsed.suffix,
+                    rawData.push({
+                        building: flatParsed.building, flat_suffix: flatParsed.suffix,
                         owner_type: flat.is_rented ? 'Renter' : 'Owner',
                         owner: flat.owner_name, phone: flat.phone_number, base_fee: flat.usual_fee,
                         date: new Date(r.date).toLocaleDateString('en-GB'), receipt_no: r.receipt_no,
                         cash: cash > 0 ? cash : '', online: online > 0 ? online : '', method: method,
                         total: Number(r.total_amount), months: r.months_covered, 
-                        months_count: r.months_count, pending_amount: Number(r.pending_amount) || 0, remarks: r.remarks || ''
+                        months_count: r.months_count, pending_amount: Number(r.pending_amount) || 0, remarks: r.remarks || '',
+                        rawDate: new Date(r.date), rawRcpt: parseInt(r.receipt_no) || 0
                     });
                 });
             }
+        });
+
+        // The Magic Sorter
+        rawData.sort((a, b) => {
+            if (sortMethod === 'date') {
+                if (a.rawDate.getTime() !== b.rawDate.getTime()) return a.rawDate - b.rawDate;
+                return a.rawRcpt - b.rawRcpt;
+            }
+            if (sortMethod === 'receipt') {
+                if (a.rawRcpt !== b.rawRcpt) return a.rawRcpt - b.rawRcpt;
+                return a.rawDate - b.rawDate;
+            }
+            // default (flat): maintain flat order, then date
+            return 0; // Pre-sorted by DB flats query!
+        });
+
+        // Finally, assign serials chronologically AFTER sorting
+        currentExportData = rawData.map((row, index) => {
+            row.serial = index + 1;
+            return row;
         });
     }
 
@@ -167,14 +188,11 @@ document.addEventListener('DOMContentLoaded', () => {
             let tr = '<tr style="border-bottom:1px solid #eee;">';
             activeCols.forEach(c => {
                 let val = row[c.id];
-                
-                // FIXED: Color coding the pending amount for the preview table
                 if (c.id === 'pending_amount' && val !== '') {
                     if (val > 0) val = `<span style="color: #D32F2F; font-weight: bold;">₹${val}</span>`;
                     else if (val < 0) val = `<span style="color: #2E7D32; font-weight: bold;">+₹${Math.abs(val)} (Adv)</span>`;
                     else val = '₹0';
                 }
-
                 tr += `<td style="padding:8px; white-space:nowrap;">${val !== '' && val !== null ? val : ''}</td>`;
             });
             tr += '</tr>';
@@ -189,18 +207,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('close-preview-btn').onclick = () => document.getElementById('preview-modal-overlay').classList.add('hidden');
 
-    // === EXCEL EXPORT (Red/Green Logic added) ===
     async function executeExcelExport() {
         if (typeof ExcelJS === 'undefined') return alert("ExcelJS is loading. Please wait 2 seconds.");
-        
         const workbook = new ExcelJS.Workbook();
         const sheet = workbook.addWorksheet('Master Report');
         const activeCols = COLS.filter(c => selectedCols.includes(c.id));
 
         sheet.columns = activeCols.map(c => ({
-            header: c.label,
-            key: c.id,
-            width: ['owner', 'remarks', 'months'].includes(c.id) ? 20 : 13
+            header: c.label, key: c.id, width: ['owner', 'remarks', 'months'].includes(c.id) ? 20 : 13
         }));
 
         const headerRow = sheet.getRow(1);
@@ -210,11 +224,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         currentExportData.forEach(rowData => {
             const row = sheet.addRow(rowData);
-            // Color code Pending column
             if (selectedCols.includes('pending_amount')) {
                 const cell = row.getCell('pending_amount');
-                if (cell.value > 0) { cell.font = { color: { argb: 'FFD32F2F' }, bold: true }; } // Due Red
-                else if (cell.value < 0) { cell.font = { color: { argb: 'FF2E7D32' }, bold: true }; } // Adv Green
+                if (cell.value > 0) { cell.font = { color: { argb: 'FFD32F2F' }, bold: true }; } 
+                else if (cell.value < 0) { cell.font = { color: { argb: 'FF2E7D32' }, bold: true }; } 
             }
         });
 
@@ -223,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (rowNumber > 1 && rowNumber % 2 === 0) row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9F9F9' } };
         });
 
-        // Add formula row at the bottom
         const lastRowIdx = currentExportData.length + 1;
         const footerRow = sheet.getRow(lastRowIdx + 1);
         footerRow.getCell(1).value = "TOTAL";
@@ -244,7 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
         link.click();
     }
 
-    // === PDF EXPORT (Chef's Kiss Professional UI) ===
     function executePDFExport() {
         if (!window.jspdf) return alert("jsPDF is loading. Please wait 2 seconds.");
         const { jsPDF } = window.jspdf;
@@ -258,12 +269,10 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.text(`Ledger Master Report (${dateFrom.value} to ${dateTo.value})`, 40, 40);
         
         doc.autoTable({
-            head: [tableColumn], body: tableRows, startY: 50,
-            theme: 'grid', // Upgraded theme
+            head: [tableColumn], body: tableRows, startY: 50, theme: 'grid',
             styles: { fontSize: 7, cellPadding: 4, textColor: [40, 40, 40], font: 'helvetica' },
             headStyles: { fillColor: [242, 101, 34], textColor: [255,255,255], fontStyle: 'bold', halign: 'center' },
-            alternateRowStyles: { fillColor: [249, 250, 251] },
-            margin: { top: 40, left: 20, right: 20 },
+            alternateRowStyles: { fillColor: [249, 250, 251] }, margin: { top: 40, left: 20, right: 20 },
             didParseCell: function(data) {
                 if (data.section === 'body' && activeCols[data.column.index].id === 'pending_amount') {
                     let val = parseFloat(data.cell.raw);
