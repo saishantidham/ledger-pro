@@ -146,6 +146,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             updateNextReceiptPlaceholder();
             renderCalendar();
+
+            // FIXED: Update the global Serial Number Display on Load
+            const nextSerial = receiptsData.length > 0 ? Math.max(...receiptsData.map(r => Number(r.serial_no) || 0)) + 1 : 1;
+            if (serialDisplay) {
+                serialDisplay.textContent = `Entry #${nextSerial}`;
+            }
+            
         } catch (err) {
             console.error("Database fetch error:", err);
         }
@@ -373,16 +380,21 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-mail-share').onclick = () => window.open(`mailto:?subject=Maintenance Receipt ${inserted.receipt_no}&body=${msg}`, '_blank');
             document.getElementById('btn-generate-receipt').onclick = () => generateReceipt(inserted.uuid);
 
-        } catch (e) { UX.vibrateError(); alert("Error saving data."); console.error(e); } 
-        finally { document.getElementById('submit-receipt-btn').textContent = "Log Entry"; updateNextReceiptPlaceholder(); }
+        } catch (e) { 
+            UX.vibrateError(); 
+            alert("Error saving data. Make sure you are logged in."); 
+            console.error(e); 
+        } 
+        finally { 
+            document.getElementById('submit-receipt-btn').textContent = "Log Entry"; 
+            updateNextReceiptPlaceholder(); 
+        }
     });
 
-    // === CONTINUOUS ENTRY MODE (FIXED: DOES NOT GO TO CALENDAR) ===
+    // === CONTINUOUS ENTRY MODE ===
     document.getElementById('modal-next-btn').onclick = async () => {
-        // 1. Hide the modal immediately
         successModal.classList.remove('visible');
         
-        // 2. Wipe the form completely clean
         currentSelectedFlatNo = null;
         D.flatBtn.classList.remove('selected'); D.flatBtnText.textContent = "Select Flat / Owner...";
         D.name.value = ""; D.phone.value = ""; D.baseFee.value = ""; D.isRented.checked = false;
@@ -398,16 +410,9 @@ document.addEventListener('DOMContentLoaded', () => {
             D.toggle.dispatchEvent(new Event('change')); 
         }
         
-        // 3. Scroll safely to the top
         const formContainer = document.querySelector('.ultra-compact-form');
         if (formContainer) formContainer.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // 4. Update the Entry Number UI instantly
-        const nextSerial = receiptsData.length > 0 ? Math.max(...receiptsData.map(r => r.serial_no)) + 1 : 1;
-        serialDisplay.textContent = `Entry #${nextSerial}`;
-
-        // 5. Silently refresh Supabase data in the background. 
-        // THIS WILL NOT SWITCH YOUR VIEW. YOU WILL STAY ON THE FORM.
         await window.loadHubData();
     };
 
