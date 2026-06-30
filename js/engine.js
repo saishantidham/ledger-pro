@@ -39,7 +39,6 @@ window.UX = {
             osc.start(this.audioCtx.currentTime); osc.stop(this.audioCtx.currentTime + 0.05);
         } catch(e) { console.warn("Audio block:", e); }
     },
-    // FIXED: Using arrays exclusively for maximum compatibility with older Androids
     vibrateLight() { if(this.hapticsOn && navigator.vibrate) navigator.vibrate([15]); },
     vibrateSuccess() { if(this.hapticsOn && navigator.vibrate) navigator.vibrate([30, 50, 30]); },
     vibrateError() { if(this.hapticsOn && navigator.vibrate) navigator.vibrate([50, 50, 50]); }
@@ -153,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     }
 
-    // === MODAL TRIGGERS FIXED ===
     document.getElementById('hub-settings-btn').addEventListener('click', () => {
         UX.playClick(); document.getElementById('settings-sheet').classList.remove('hidden');
     });
@@ -211,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
             list.innerHTML = '<li class="text-center text-muted mt-md">No entries found.</li>';
         } else {
             recent.forEach(r => {
-                // FIXED: Color coding for pending amounts in Recent Logs
                 let pendingStr = "";
                 let pAmt = Number(r.pending_amount);
                 if (pAmt > 0) pendingStr = `<span style="color:#D32F2F; font-size:10px;">Due: ₹${pAmt}</span>`;
@@ -241,12 +238,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('close-recent-btn')?.addEventListener('click', () => { document.getElementById('recent-logs-sheet').classList.add('hidden'); });
 
+    // === WHATSAPP SHARE FIX ===
     window.shareRecent = function(flat, amount, rcpt, uuid) {
         UX.playClick();
         const flatData = flatsData.find(f => f.flat_no === flat);
         const ownerName = flatData ? flatData.owner_name.replace(/^\(R\)\s*/, '') : 'Resident';
         const msg = buildWhatsAppMsg(ownerName, amount, flat, rcpt, uuid);
-        window.open(`https://wa.me/?text=${msg}`, '_blank');
+        
+        let waLink = `https://wa.me/?text=${msg}`; // Fallback general share
+        
+        if (flatData && flatData.phone_number) {
+            let phone = flatData.phone_number.replace(/\D/g, ''); // Remove spaces/symbols
+            if (phone.length === 10) phone = '91' + phone; // Add India code
+            if (phone.length > 5) waLink = `https://wa.me/${phone}?text=${msg}`; // Direct user share
+        }
+        window.open(waLink, '_blank');
     };
 
     window.generateReceipt = function(uuid) {
@@ -373,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let actualMonthsCount = currentCalculatedMonths > 0 ? currentCalculatedMonths : 1;
         const baseFee = parseFloat(D.baseFee.value) || 0;
         const expectedTotal = actualMonthsCount * baseFee;
-        const pendingAmt = expectedTotal - totalAmt; // Negative means Overpayment
+        const pendingAmt = expectedTotal - totalAmt; 
 
         document.getElementById('submit-receipt-btn').textContent = "Saving...";
 
@@ -399,7 +405,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const cleanName = D.name.value.replace(/^\(R\)\s*/, '');
             const msg = buildWhatsAppMsg(cleanName, totalAmt, currentSelectedFlatNo, inserted.receipt_no, inserted.uuid);
             
-            document.getElementById('btn-whatsapp-share').onclick = () => window.open(`https://wa.me/${D.phone.value}?text=${msg}`, '_blank');
+            // === WHATSAPP SUBMIT SHARE FIX ===
+            let waPhone = D.phone.value.replace(/\D/g, '');
+            if (waPhone.length === 10) waPhone = '91' + waPhone;
+            const waLink = waPhone.length > 5 ? `https://wa.me/${waPhone}?text=${msg}` : `https://wa.me/?text=${msg}`;
+            
+            document.getElementById('btn-whatsapp-share').onclick = () => window.open(waLink, '_blank');
+            // =================================
+
             document.getElementById('btn-mail-share').onclick = () => window.open(`mailto:?subject=Maintenance Receipt ${inserted.receipt_no}&body=${msg}`, '_blank');
             document.getElementById('btn-generate-receipt').onclick = () => generateReceipt(inserted.uuid);
 
