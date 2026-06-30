@@ -1,4 +1,3 @@
-// === HAPTICS & AUDIO ENGINE (Native Web Audio API) ===
 window.UX = {
     hapticsOn: localStorage.getItem('haptics') !== 'false',
     soundsOn: localStorage.getItem('sound') !== 'false',
@@ -27,17 +26,14 @@ window.UX = {
         try {
             if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
-            
             const osc = this.audioCtx.createOscillator();
             const gain = this.audioCtx.createGain();
             osc.connect(gain); gain.connect(this.audioCtx.destination);
-            
             osc.type = 'sine'; osc.frequency.setValueAtTime(600, this.audioCtx.currentTime); 
             gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.05);
-            
             osc.start(this.audioCtx.currentTime); osc.stop(this.audioCtx.currentTime + 0.05);
-        } catch(e) { console.warn("Audio block:", e); }
+        } catch(e) {}
     },
     vibrateLight() { if(this.hapticsOn && navigator.vibrate) navigator.vibrate([15]); },
     vibrateSuccess() { if(this.hapticsOn && navigator.vibrate) navigator.vibrate([30, 50, 30]); },
@@ -47,10 +43,30 @@ window.UX = {
 document.addEventListener('DOMContentLoaded', () => {
     UX.init();
 
+    // === NATIVE BACK BUTTON LOGIC (Android Style) ===
+    history.pushState(null, document.title, location.href);
+    window.addEventListener('popstate', function (event) {
+        let overlayHandled = false;
+        const overlays = document.querySelectorAll('.bottom-sheet-overlay:not(.hidden), .modal-overlay.visible');
+        
+        if (overlays.length > 0) {
+            overlays.forEach(m => { m.classList.add('hidden'); m.classList.remove('visible'); });
+            overlayHandled = true;
+        } else {
+            const workspace = document.getElementById('workspace-view');
+            const exportView = document.getElementById('export-view');
+            if (workspace.classList.contains('active-view') || exportView.classList.contains('active-view')) {
+                switchView('hub');
+                overlayHandled = true;
+            }
+        }
+        // Repush state so app doesn't immediately close on next back press
+        history.pushState(null, document.title, location.href);
+    });
+
     function initKeyboardTrapFix() {
         if (!window.visualViewport) return;
         const workspace = document.getElementById('workspace-view');
-        
         window.visualViewport.addEventListener('resize', () => {
             workspace.style.height = `${window.visualViewport.height}px`;
             if (window.visualViewport.height < window.innerHeight * 0.8) {
@@ -62,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 workspace.style.height = '100dvh'; window.scrollTo(0,0);
             }
         });
-        document.addEventListener('focusout', () => { if (window.visualViewport.height >= window.innerHeight * 0.8) { window.scrollTo(0, 0); } });
+        document.addEventListener('focusout', () => { if (window.visualViewport.height >= window.innerHeight * 0.8) window.scrollTo(0, 0); });
     }
     initKeyboardTrapFix();
 
@@ -75,8 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const views = { auth: document.getElementById('auth-view'), hub: document.getElementById('hub-view'), workspace: document.getElementById('workspace-view') };
     const calGrid = document.getElementById('calendar-grid');
     const calHeader = document.getElementById('cal-month-year');
-    const activeSessionDateDisplay = document.getElementById('active-session-date');
     const serialDisplay = document.getElementById('serial-display');
+    const activeSessionDateDisplay = document.getElementById('active-session-date');
     const form = document.getElementById('receipt-form');
     const successModal = document.getElementById('success-modal-overlay');
 
@@ -96,9 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentSelectedFlatNo = null;
 
-    const waMsgInput = document.getElementById('wa-default-msg');
     const defaultTemplate = "Hello {name},\nYour maintenance payment of ₹{amount} for Flat {flat} (Rcpt: {rcpt}) has been received successfully.\nReceipt: {link}\nThank you!";
-    
+    const waMsgInput = document.getElementById('wa-default-msg');
     if(waMsgInput) {
         waMsgInput.value = localStorage.getItem('waTemplate') || defaultTemplate;
         waMsgInput.addEventListener('input', (e) => localStorage.setItem('waTemplate', e.target.value));
@@ -107,43 +122,35 @@ document.addEventListener('DOMContentLoaded', () => {
     function buildWhatsAppMsg(name, amount, flat, rcpt, uuid) {
         let template = localStorage.getItem('waTemplate') || defaultTemplate;
         const basePath = window.location.origin + window.location.pathname.replace('index.html', '');
-        const receiptLink = `${basePath}receipt.html?id=${uuid}`;
-        
-        return encodeURIComponent(
-            template.replace('{name}', name).replace('{amount}', amount).replace('{flat}', flat).replace('{rcpt}', rcpt).replace('{link}', receiptLink)
-        );
+        return encodeURIComponent(template.replace('{name}', name).replace('{amount}', amount).replace('{flat}', flat).replace('{rcpt}', rcpt).replace('{link}', `${basePath}receipt.html?id=${uuid}`));
     }
 
-    function updateNextReceiptPlaceholder() {
-        if (!receiptsData || receiptsData.length === 0) {
-            D.rcptNo.placeholder = "Auto (14000)";
-            return;
-        }
+    // === RECEIPT AUTO-INCREMENT OVERRIDE ENGINE ===
+    function getNextRcptStr() {
+        if (!receiptsData || receiptsData.length === 0) return "14000";
         let max = 0;
         receiptsData.forEach(r => {
             let num = parseInt(r.receipt_no);
             if (!isNaN(num) && num > max) max = num;
         });
-        D.rcptNo.placeholder = max > 0 ? `Auto (${max + 1})` : "Auto (14000)";
+        return max > 0 ? (max + 1).toString() : "14000";
+    }
+
+    function updateNextReceiptPlaceholder() {
+        D.rcptNo.placeholder = `Auto (${getNextRcptStr()})`;
     }
 
     window.loadHubData = async function() {
         try {
             flatsData = await DB.fetchFlats() || [];
-            const { data: rcpts, error } = await supabaseClient.from('receipts')
-                .select('*')
-                .order('created_at', { ascending: false });
-                
+            const { data: rcpts, error } = await supabaseClient.from('receipts').select('*').order('created_at', { ascending: false });
             if (error) throw error;
             receiptsData = rcpts || [];
             updateNextReceiptPlaceholder();
             renderCalendar();
-
             const nextSerial = receiptsData.length > 0 ? Math.max(...receiptsData.map(r => Number(r.serial_no) || 0)) + 1 : 1;
             if (serialDisplay) serialDisplay.textContent = `Entry #${nextSerial}`;
-        } catch (err) {
-            console.error("Database fetch error:", err);
-        }
+        } catch (err) { console.error(err); }
     };
 
     function switchView(viewName) {
@@ -152,12 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     }
 
-    document.getElementById('hub-settings-btn').addEventListener('click', () => {
-        UX.playClick(); document.getElementById('settings-sheet').classList.remove('hidden');
-    });
-    document.getElementById('close-settings-btn').addEventListener('click', () => {
-        UX.playClick(); document.getElementById('settings-sheet').classList.add('hidden');
-    });
+    document.getElementById('hub-settings-btn').addEventListener('click', () => { UX.playClick(); document.getElementById('settings-sheet').classList.remove('hidden'); });
+    document.getElementById('close-settings-btn').addEventListener('click', () => { UX.playClick(); document.getElementById('settings-sheet').classList.add('hidden'); });
 
     document.getElementById('prev-month-btn')?.addEventListener('click', () => { currentHubDate.setMonth(currentHubDate.getMonth() - 1); renderCalendar(); });
     document.getElementById('next-month-btn')?.addEventListener('click', () => { currentHubDate.setMonth(currentHubDate.getMonth() + 1); renderCalendar(); });
@@ -166,14 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!calGrid) return;
         const year = currentHubDate.getFullYear(); const month = currentHubDate.getMonth();
         calHeader.textContent = currentHubDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const activeDates = new Set(receiptsData.map(r => r.date));
         
         calGrid.innerHTML = '';
         for (let i = 0; i < firstDay; i++) calGrid.innerHTML += `<div></div>`;
-        
         const today = new Date();
         for (let i = 1; i <= daysInMonth; i++) {
             const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
@@ -205,9 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
         list.innerHTML = '';
         
         const recent = receiptsData.slice().sort((a,b) => b.serial_no - a.serial_no).slice(0, 15);
-        if(recent.length === 0) {
-            list.innerHTML = '<li class="text-center text-muted mt-md">No entries found.</li>';
-        } else {
+        if(recent.length === 0) list.innerHTML = '<li class="text-center text-muted mt-md">No entries found.</li>';
+        else {
             recent.forEach(r => {
                 let pendingStr = "";
                 let pAmt = Number(r.pending_amount);
@@ -238,41 +238,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('close-recent-btn')?.addEventListener('click', () => { document.getElementById('recent-logs-sheet').classList.add('hidden'); });
 
-    // === WHATSAPP SHARE FIX ===
     window.shareRecent = function(flat, amount, rcpt, uuid) {
         UX.playClick();
         const flatData = flatsData.find(f => f.flat_no === flat);
         const ownerName = flatData ? flatData.owner_name.replace(/^\(R\)\s*/, '') : 'Resident';
         const msg = buildWhatsAppMsg(ownerName, amount, flat, rcpt, uuid);
-        
-        let waLink = `https://wa.me/?text=${msg}`; // Fallback general share
-        
+        let waLink = `https://wa.me/?text=${msg}`;
         if (flatData && flatData.phone_number) {
-            let phone = flatData.phone_number.replace(/\D/g, ''); // Remove spaces/symbols
-            if (phone.length === 10) phone = '91' + phone; // Add India code
-            if (phone.length > 5) waLink = `https://wa.me/${phone}?text=${msg}`; // Direct user share
+            let phone = flatData.phone_number.replace(/\D/g, ''); 
+            if (phone.length === 10) phone = '91' + phone; 
+            if (phone.length > 5) waLink = `https://wa.me/${phone}?text=${msg}`; 
         }
         window.open(waLink, '_blank');
     };
 
-    window.generateReceipt = function(uuid) {
-        UX.playClick(); window.open(`receipt.html?id=${uuid}`, '_blank');
-    };
-
-    window.editOldLog = function(uuid) {
-        UX.playClick(); document.getElementById('recent-logs-sheet').classList.add('hidden'); switchView('workspace'); D.toggle.checked = true; D.toggle.dispatchEvent(new Event('change'));
-    };
+    window.generateReceipt = function(uuid) { UX.playClick(); window.open(`receipt.html?id=${uuid}`, '_blank'); };
+    window.editOldLog = function(uuid) { UX.playClick(); document.getElementById('recent-logs-sheet').classList.add('hidden'); switchView('workspace'); D.toggle.checked = true; D.toggle.dispatchEvent(new Event('change')); };
 
     function openWorkspace(dateStr) {
         selectedSessionDate = new Date(dateStr);
         activeSessionDateDisplay.textContent = selectedSessionDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
         D.dateIn.value = dateStr; 
-        
         updateNextReceiptPlaceholder();
         switchView('workspace');
     }
     document.getElementById('back-to-hub-btn').onclick = () => { switchView('hub'); window.loadHubData(); };
 
+    // === ADVANCED FUZZY FLAT SEARCH ===
     const searchModal = document.getElementById('flat-search-modal');
     const searchInput = document.getElementById('flat-search-input');
     const flatList = document.getElementById('flat-list');
@@ -282,8 +274,17 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('input', (e) => renderFlatList(e.target.value));
 
     function renderFlatList(filter) {
-        const lowerFilter = filter.toLowerCase();
-        const filtered = flatsData.filter(f => f.flat_no.toLowerCase().includes(lowerFilter) || f.owner_name.toLowerCase().includes(lowerFilter));
+        const cleanFilter = filter.toLowerCase().replace(/[-\s_]/g, '');
+        const filterNoZeros = cleanFilter.replace(/0/g, '');
+
+        const filtered = flatsData.filter(f => {
+            const fClean = f.flat_no.toLowerCase().replace(/[-\s_]/g, '');
+            const oClean = f.owner_name.toLowerCase().replace(/[-\s_]/g, '');
+            if (fClean.includes(cleanFilter) || oClean.includes(cleanFilter)) return true;
+            if (filterNoZeros.length > 0 && fClean.replace(/0/g, '').includes(filterNoZeros)) return true;
+            return false;
+        });
+
         flatList.innerHTML = '';
         filtered.forEach(f => {
             const li = document.createElement('li');
@@ -337,28 +338,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function calculateMonths() {
         if (!D.mFromIn.value || !D.mToIn.value) {
-            currentCalculatedMonths = 0;
-            D.mCalc.textContent = "0 Months";
-            D.baseTotalCalc.textContent = "₹0";
-            return;
+            currentCalculatedMonths = 0; D.mCalc.textContent = "0 Months"; D.baseTotalCalc.textContent = "₹0"; return;
         }
-        const d1 = new Date(D.mFromIn.value + '-01'); 
-        const d2 = new Date(D.mToIn.value + '-01');
-        
+        const d1 = new Date(D.mFromIn.value + '-01'); const d2 = new Date(D.mToIn.value + '-01');
         let m = (d2.getFullYear() - d1.getFullYear()) * 12 - d1.getMonth() + d2.getMonth() + 1;
-        
         const fee = parseFloat(D.baseFee.value) || 0;
 
         if (m > 0) {
-            currentCalculatedMonths = m;
-            D.mCalc.textContent = `${m} Months`; 
-            D.mCalc.className = 'calc-label text-success';
-            D.baseTotalCalc.textContent = `₹${m * fee}`;
+            currentCalculatedMonths = m; D.mCalc.textContent = `${m} Months`; D.mCalc.className = 'calc-label text-success'; D.baseTotalCalc.textContent = `₹${m * fee}`;
         } else {
-            currentCalculatedMonths = 0;
-            D.mCalc.textContent = "Invalid Range"; 
-            D.mCalc.className = 'calc-label text-error'; 
-            D.baseTotalCalc.textContent = `₹0`;
+            currentCalculatedMonths = 0; D.mCalc.textContent = "Invalid Range"; D.mCalc.className = 'calc-label text-error'; D.baseTotalCalc.textContent = `₹0`;
         }
     }
     
@@ -383,14 +372,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('submit-receipt-btn').textContent = "Saving...";
 
+        // FULL AUTO-INCREMENT FIX: Bypassing DB Sequence completely
         const rPayload = {
             flat_no: currentSelectedFlatNo, date: D.dateIn.value,
             months_covered: (D.mFromIn.value && D.mToIn.value) ? `${formatMonthStr(D.mFromIn.value)} to ${formatMonthStr(D.mToIn.value)}` : 'N/A',
-            months_count: actualMonthsCount,
-            pending_amount: pendingAmt,
+            months_count: actualMonthsCount, pending_amount: pendingAmt,
             cash_amount: cashAmt, online_amount: onlineAmt, remarks: D.remarks.value
         };
-        if (D.toggle.checked && D.rcptNo.value) rPayload.receipt_no = D.rcptNo.value;
+        
+        rPayload.receipt_no = (D.toggle.checked && D.rcptNo.value) ? D.rcptNo.value : getNextRcptStr();
 
         try {
             await DB.updateFlatMaster(currentSelectedFlatNo, { owner_name: D.name.value, phone_number: D.phone.value, usual_fee: parseFloat(D.baseFee.value), is_rented: D.isRented.checked });
@@ -405,14 +395,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const cleanName = D.name.value.replace(/^\(R\)\s*/, '');
             const msg = buildWhatsAppMsg(cleanName, totalAmt, currentSelectedFlatNo, inserted.receipt_no, inserted.uuid);
             
-            // === WHATSAPP SUBMIT SHARE FIX ===
             let waPhone = D.phone.value.replace(/\D/g, '');
             if (waPhone.length === 10) waPhone = '91' + waPhone;
             const waLink = waPhone.length > 5 ? `https://wa.me/${waPhone}?text=${msg}` : `https://wa.me/?text=${msg}`;
             
             document.getElementById('btn-whatsapp-share').onclick = () => window.open(waLink, '_blank');
-            // =================================
-
             document.getElementById('btn-mail-share').onclick = () => window.open(`mailto:?subject=Maintenance Receipt ${inserted.receipt_no}&body=${msg}`, '_blank');
             document.getElementById('btn-generate-receipt').onclick = () => generateReceipt(inserted.uuid);
 
@@ -431,8 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         successModal.classList.add('hidden');
         successModal.classList.remove('visible');
         
-        currentSelectedFlatNo = null;
-        currentCalculatedMonths = 0;
+        currentSelectedFlatNo = null; currentCalculatedMonths = 0;
         D.flatBtn.classList.remove('selected'); D.flatBtnText.textContent = "Select Flat / Owner...";
         D.name.value = ""; D.phone.value = ""; D.baseFee.value = ""; D.isRented.checked = false;
         D.cash.value = ""; D.online.value = ""; D.total.textContent = "₹0";
@@ -442,39 +428,15 @@ document.addEventListener('DOMContentLoaded', () => {
         D.mToDisp.textContent = "MMM YYYY"; D.mToDisp.classList.add('text-muted');
         D.mCalc.textContent = "0 Months"; D.baseTotalCalc.textContent = "₹0";
         
-        if (D.toggle.checked) { 
-            D.toggle.checked = false; 
-            D.toggle.dispatchEvent(new Event('change')); 
-        }
-        
+        if (D.toggle.checked) { D.toggle.checked = false; D.toggle.dispatchEvent(new Event('change')); }
         const formContainer = document.querySelector('.ultra-compact-form');
         if (formContainer) formContainer.scrollTo({ top: 0, behavior: 'smooth' });
 
         await window.loadHubData();
     };
 
-    let deferredPrompt;
-    const installBtn = document.getElementById('install-app-btn');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        if(installBtn) installBtn.classList.remove('hidden');
-    });
-
-    if(installBtn) {
-        installBtn.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
-            UX.playClick();
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') installBtn.classList.add('hidden');
-            deferredPrompt = null;
-        });
-    }
-
-    window.addEventListener('appinstalled', () => {
-        if(installBtn) installBtn.classList.add('hidden');
-        deferredPrompt = null;
-    });
+    let deferredPrompt; const installBtn = document.getElementById('install-app-btn');
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; if(installBtn) installBtn.classList.remove('hidden'); });
+    if(installBtn) { installBtn.addEventListener('click', async () => { if (!deferredPrompt) return; UX.playClick(); deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') installBtn.classList.add('hidden'); deferredPrompt = null; }); }
+    window.addEventListener('appinstalled', () => { if(installBtn) installBtn.classList.add('hidden'); deferredPrompt = null; });
 });
