@@ -20,31 +20,36 @@
 
         body { 
             margin: 0; 
-            padding: 20px; 
+            padding: 20px 10px; 
             background: #E5E7EB; 
             font-family: 'Inter', sans-serif; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             min-height: 100vh;
+            overflow-x: auto; /* Allows horizontal scroll on very small phones without breaking layout */
         }
 
-        /* Card container - strict sharp edges to prevent html2canvas glitches */
+        /* * Card container - STRICT fixed width. 
+         * This prevents mobile screens from crushing elements to new lines.
+         */
         #receipt-card {
             background: #FFFFFF;
-            width: 100%; 
-            max-width: 400px;
+            width: 380px; 
+            min-width: 380px; 
+            max-width: 380px; 
             border-radius: 0;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
             position: relative;
             overflow: hidden;
             border: 1px solid #D1D5DB;
+            margin: 0 auto;
         }
 
-        /* Premium Saffron Header */
+        /* Premium Saffron Header - Compact */
         .premium-header {
             background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
-            padding: 28px 20px 24px;
+            padding: 18px 20px 14px;
             text-align: center;
             color: #FFFFFF;
             border-bottom: 4px solid #9A3412;
@@ -52,15 +57,15 @@
         
         .premium-header h1 { 
             margin: 0; 
-            font-size: 24px; 
+            font-size: 22px; 
             font-weight: 800; 
             letter-spacing: 0.5px; 
             text-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }
         
         .premium-header h2 { 
-            margin: 8px 0 4px 0; 
-            font-size: 13px; 
+            margin: 4px 0 2px 0; 
+            font-size: 11px; 
             font-weight: 600; 
             text-transform: uppercase; 
             letter-spacing: 0.5px; 
@@ -69,61 +74,75 @@
         
         .premium-header p.reg { 
             margin: 0; 
-            font-size: 11px; 
+            font-size: 10px; 
             font-weight: 500; 
             color: #FFEDD5; 
         }
 
         .email-contact {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            margin-top: 14px;
-            font-size: 11px;
+            margin-top: 10px;
+            font-size: 10px;
             font-weight: 500;
             color: #FFFFFF;
             background: rgba(0,0,0,0.15);
-            padding: 6px 12px;
-            display: inline-flex;
+            padding: 4px 10px;
         }
 
-        /* Body Section */
+        /* Body Section - Compact Padding */
         .receipt-body {
-            padding: 24px;
+            padding: 16px 20px;
         }
 
         .row { 
             display: flex; 
             justify-content: space-between; 
-            padding: 10px 0;
-            font-size: 13px; 
+            align-items: center;
+            padding: 6px 0;
+            font-size: 12px; 
             border-bottom: 1px solid #F3F4F6;
         }
         .row:last-of-type { border-bottom: none; }
         
-        .lbl { color: #6B7280; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
-        .val { color: #111827; font-weight: 700; text-align: right; font-size: 13px; }
+        .lbl { 
+            color: #6B7280; 
+            font-weight: 600; 
+            text-transform: uppercase; 
+            font-size: 10.5px; 
+            letter-spacing: 0.5px; 
+            flex-shrink: 0;
+            padding-right: 10px;
+        }
+        .val { 
+            color: #111827; 
+            font-weight: 700; 
+            text-align: right; 
+            font-size: 12.5px; 
+            white-space: nowrap; /* Prevents wrapping */
+        }
 
         .total-box {
             background: #FFF7ED;
             border-left: 4px solid #EA580C;
-            padding: 14px 16px;
+            padding: 10px 14px;
             display: flex; 
             justify-content: space-between; 
             align-items: center;
-            margin: 20px 0;
+            margin: 12px 0;
         }
-        .total-box .lbl { font-size: 14px; color: #9A3412; font-weight: 700; letter-spacing: 0; }
-        .total-box .val { font-size: 22px; color: #EA580C; font-weight: 800; }
+        .total-box .lbl { font-size: 13px; color: #9A3412; font-weight: 700; letter-spacing: 0; }
+        .total-box .val { font-size: 20px; color: #EA580C; font-weight: 800; }
 
         /* Signatures, Stamp & QR */
         .footer-signatures {
             display: flex; 
             justify-content: space-between; 
             align-items: flex-start;
-            margin-top: 28px;
-            padding-top: 20px;
+            margin-top: 16px;
+            padding-top: 14px;
             border-top: 2px dashed #E5E7EB;
         }
 
@@ -131,13 +150,13 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            gap: 8px;
-            width: 100px;
+            gap: 6px;
+            width: 90px;
         }
 
         .stamp-box, #qrcode {
-            width: 90px; 
-            height: 90px;
+            width: 85px; 
+            height: 85px;
             display: flex; 
             align-items: center; 
             justify-content: center;
@@ -166,34 +185,34 @@
 
         /* Footer / Branding */
         .receipt-footer {
-            background: #F9FAFB;
-            border-top: 1px solid #E5E7EB;
-            padding: 16px 20px;
+            background: #FFF7ED; /* Soft orange tint */
+            border-top: 1px solid #FED7AA;
+            padding: 12px 20px;
             text-align: center;
         }
 
         .system-note {
-            font-size: 10px;
-            color: #6B7280;
+            font-size: 9px;
+            color: #9A3412;
             font-weight: 500;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             font-style: italic;
         }
 
         .branding {
             font-size: 10px;
-            color: #9CA3AF;
+            color: #EA580C; /* All orange branding */
         }
         
         .branding strong {
-            color: #111827;
+            color: #C2410C; /* Darker orange for bold contrast */
             font-weight: 800;
             letter-spacing: 0.5px;
         }
         
         .branding .tagline {
             display: block;
-            margin-top: 4px;
+            margin-top: 3px;
             font-size: 8px;
             font-weight: 700;
             color: #EA580C;
@@ -201,8 +220,8 @@
         }
 
         /* External UI Elements */
-        .actions { margin-top: 24px; width: 100%; max-width: 400px; display: flex; gap: 12px; }
-        .btn { flex: 1; padding: 16px; border-radius: 0; border: none; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.1s; letter-spacing: 0.5px; text-transform: uppercase; }
+        .actions { margin-top: 20px; width: 380px; display: flex; gap: 12px; }
+        .btn { flex: 1; padding: 14px; border-radius: 0; border: none; font-size: 13px; font-weight: 700; cursor: pointer; transition: transform 0.1s; letter-spacing: 0.5px; text-transform: uppercase; }
         .btn-primary { background: #111827; color: #FFF; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
         .btn-primary:active { transform: scale(0.98); }
         
@@ -221,7 +240,7 @@
             <p class="reg">Silvassa - DNH & DD, Reg. No. COOP/HSG(S)/248</p>
             
             <div class="email-contact">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="2" y="4" width="20" height="16"></rect>
                     <path d="M2 4l10 8 10-8"></path>
                 </svg>
@@ -243,7 +262,7 @@
 
             <div class="row"><span class="lbl">Cash Amount</span> <span class="val" id="r-cash">₹0</span></div>
             <div class="row"><span class="lbl">Online Amount</span> <span class="val" id="r-online">₹0</span></div>
-            <div class="row" style="margin-top: 8px;"><span class="lbl">Remarks</span> <span class="val" id="r-rem" style="font-weight: 500;">...</span></div>
+            <div class="row"><span class="lbl">Remarks</span> <span class="val" id="r-rem" style="font-weight: 500;">...</span></div>
 
             <div class="footer-signatures">
                 <div class="block-container">
@@ -314,7 +333,34 @@
                 const ownerName = data.flats ? data.flats.owner_name : 'Unknown';
                 document.getElementById('r-name').textContent = data.flats && data.flats.is_rented ? `(R) ${ownerName.replace(/^\(R\)\s*/, '')}` : ownerName;
                 
-                document.getElementById('r-months').textContent = data.months_covered;
+                // Smart "Months Covered" Logic
+                let rawMonths = data.months_covered || "";
+                let formattedMonths = rawMonths;
+                
+                if (rawMonths.toLowerCase().includes(" to ")) {
+                    let parts = rawMonths.split(/ to /i).map(s => s.trim());
+                    if (parts.length === 2) {
+                        if (parts[0].toLowerCase() === parts[1].toLowerCase()) {
+                            // Same month (e.g. May 2026 to May 2026 -> May 2026)
+                            formattedMonths = parts[0];
+                        } else {
+                            // Different months (e.g. May 2026 to July 2026 -> May '26 to Jul '26)
+                            const shortFormat = (str) => {
+                                let match = str.match(/([a-zA-Z]{3})[a-zA-Z]*\s*(\d{4}|\d{2})/);
+                                if (match) {
+                                    let year = match[2];
+                                    let shortYear = year.length === 4 ? year.slice(-2) : year;
+                                    return `${match[1]} '${shortYear}`;
+                                }
+                                return str;
+                            };
+                            formattedMonths = `${shortFormat(parts[0])} to ${shortFormat(parts[1])}`;
+                        }
+                    }
+                }
+                document.getElementById('r-months').textContent = formattedMonths;
+
+                // Cash/Online amounts
                 document.getElementById('r-cash').textContent = data.cash_amount ? `₹${data.cash_amount}` : '-';
                 document.getElementById('r-online').textContent = data.online_amount ? `₹${data.online_amount}` : '-';
                 
@@ -325,7 +371,7 @@
                 // Render QR code
                 new QRCode(document.getElementById("qrcode"), {
                     text: window.location.href,
-                    width: 90, height: 90,
+                    width: 85, height: 85,
                     colorDark : "#111827", colorLight : "#ffffff",
                     correctLevel : QRCode.CorrectLevel.L
                 });
@@ -339,7 +385,7 @@
         function downloadImage() {
             const card = document.getElementById('receipt-card');
             
-            // scale: 3 gives ultra-crisp output; curved edges removed from CSS to avoid canvas cutoff errors
+            // scale: 3 gives ultra-crisp output
             html2canvas(card, { scale: 3, backgroundColor: "#FFFFFF" }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `Receipt_${document.getElementById('r-no').textContent}.png`;
