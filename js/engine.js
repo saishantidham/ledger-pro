@@ -39,7 +39,8 @@ window.UX = {
             osc.start(this.audioCtx.currentTime); osc.stop(this.audioCtx.currentTime + 0.05);
         } catch(e) { console.warn("Audio block:", e); }
     },
-    vibrateLight() { if(this.hapticsOn && navigator.vibrate) navigator.vibrate(15); },
+    // FIXED: Using arrays exclusively for maximum compatibility with older Androids
+    vibrateLight() { if(this.hapticsOn && navigator.vibrate) navigator.vibrate([15]); },
     vibrateSuccess() { if(this.hapticsOn && navigator.vibrate) navigator.vibrate([30, 50, 30]); },
     vibrateError() { if(this.hapticsOn && navigator.vibrate) navigator.vibrate([50, 50, 50]); }
 };
@@ -152,6 +153,14 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     }
 
+    // === MODAL TRIGGERS FIXED ===
+    document.getElementById('hub-settings-btn').addEventListener('click', () => {
+        UX.playClick(); document.getElementById('settings-sheet').classList.remove('hidden');
+    });
+    document.getElementById('close-settings-btn').addEventListener('click', () => {
+        UX.playClick(); document.getElementById('settings-sheet').classList.add('hidden');
+    });
+
     document.getElementById('prev-month-btn')?.addEventListener('click', () => { currentHubDate.setMonth(currentHubDate.getMonth() - 1); renderCalendar(); });
     document.getElementById('next-month-btn')?.addEventListener('click', () => { currentHubDate.setMonth(currentHubDate.getMonth() + 1); renderCalendar(); });
 
@@ -202,12 +211,21 @@ document.addEventListener('DOMContentLoaded', () => {
             list.innerHTML = '<li class="text-center text-muted mt-md">No entries found.</li>';
         } else {
             recent.forEach(r => {
+                // FIXED: Color coding for pending amounts in Recent Logs
+                let pendingStr = "";
+                let pAmt = Number(r.pending_amount);
+                if (pAmt > 0) pendingStr = `<span style="color:#D32F2F; font-size:10px;">Due: ₹${pAmt}</span>`;
+                if (pAmt < 0) pendingStr = `<span style="color:#2E7D32; font-size:10px;">Adv: ₹${Math.abs(pAmt)}</span>`;
+
                 const li = document.createElement('li');
                 li.className = 'list-item flex-between align-center';
                 li.innerHTML = `
                     <div style="flex: 1;">
                         <div class="list-item-title">${r.flat_no} <span class="text-saffron font-semibold ml-xs">₹${r.total_amount || 0}</span></div>
-                        <div class="list-item-sub">Rcpt: ${r.receipt_no} | ${new Date(r.date).toLocaleDateString('en-GB')}</div>
+                        <div class="list-item-sub" style="display:flex; justify-content:space-between; padding-right: 1rem;">
+                            <span>Rcpt: ${r.receipt_no} | ${new Date(r.date).toLocaleDateString('en-GB')}</span>
+                            ${pendingStr}
+                        </div>
                         <div class="action-tray">
                             <button class="btn-micro" onclick="editOldLog('${r.uuid}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button>
                             <button class="btn-micro" onclick="shareRecent('${r.flat_no}', ${r.total_amount || 0}, '${r.receipt_no}', '${r.uuid}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> WA</button>
@@ -352,11 +370,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalAmt = cashAmt + onlineAmt;
         if (totalAmt === 0) { UX.vibrateError(); return alert("Total cannot be zero."); }
 
-        // EXPLICIT MATH SAFEGUARDS
-        let actualMonthsCount = currentCalculatedMonths > 0 ? currentCalculatedMonths : 1; // Fallback to 1 month if user leaves it blank
+        let actualMonthsCount = currentCalculatedMonths > 0 ? currentCalculatedMonths : 1;
         const baseFee = parseFloat(D.baseFee.value) || 0;
         const expectedTotal = actualMonthsCount * baseFee;
-        const pendingAmt = expectedTotal - totalAmt;
+        const pendingAmt = expectedTotal - totalAmt; // Negative means Overpayment
 
         document.getElementById('submit-receipt-btn').textContent = "Saving...";
 
@@ -376,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             UX.vibrateSuccess();
             document.getElementById('snapshot-text').textContent = `Rcpt: ${inserted.receipt_no} | ${D.name.value} | ₹${totalAmt}`;
+            successModal.classList.remove('hidden');
             successModal.classList.add('visible');
             
             const cleanName = D.name.value.replace(/^\(R\)\s*/, '');
@@ -397,6 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('modal-next-btn').onclick = async () => {
+        successModal.classList.add('hidden');
         successModal.classList.remove('visible');
         
         currentSelectedFlatNo = null;
