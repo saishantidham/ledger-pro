@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let receiptsData = []; 
     let currentHubDate = new Date(); 
     let selectedSessionDate = new Date(); 
-    let currentCalculatedMonths = 0; // NEW: Track integer math
+    let currentCalculatedMonths = 0; 
 
     const views = { auth: document.getElementById('auth-view'), hub: document.getElementById('hub-view'), workspace: document.getElementById('workspace-view') };
     const calGrid = document.getElementById('calendar-grid');
@@ -314,21 +314,27 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateMonths() {
         if (!D.mFromIn.value || !D.mToIn.value) {
             currentCalculatedMonths = 0;
+            D.mCalc.textContent = "0 Months";
+            D.baseTotalCalc.textContent = "₹0";
             return;
         }
         const d1 = new Date(D.mFromIn.value + '-01'); 
         const d2 = new Date(D.mToIn.value + '-01');
         
         let m = (d2.getFullYear() - d1.getFullYear()) * 12 - d1.getMonth() + d2.getMonth() + 1;
-        currentCalculatedMonths = m;
         
         const fee = parseFloat(D.baseFee.value) || 0;
 
         if (m > 0) {
-            D.mCalc.textContent = `${m} Months`; D.mCalc.className = 'calc-label text-success';
+            currentCalculatedMonths = m;
+            D.mCalc.textContent = `${m} Months`; 
+            D.mCalc.className = 'calc-label text-success';
             D.baseTotalCalc.textContent = `₹${m * fee}`;
         } else {
-            D.mCalc.textContent = "Invalid Range"; D.mCalc.className = 'calc-label text-error'; D.baseTotalCalc.textContent = `₹0`;
+            currentCalculatedMonths = 0;
+            D.mCalc.textContent = "Invalid Range"; 
+            D.mCalc.className = 'calc-label text-error'; 
+            D.baseTotalCalc.textContent = `₹0`;
         }
     }
     
@@ -346,17 +352,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalAmt = cashAmt + onlineAmt;
         if (totalAmt === 0) { UX.vibrateError(); return alert("Total cannot be zero."); }
 
-        // NEW LOGIC: Calculate pending amount for database
+        // EXPLICIT MATH SAFEGUARDS
+        let actualMonthsCount = currentCalculatedMonths > 0 ? currentCalculatedMonths : 1; // Fallback to 1 month if user leaves it blank
         const baseFee = parseFloat(D.baseFee.value) || 0;
-        const expectedTotal = currentCalculatedMonths > 0 ? (currentCalculatedMonths * baseFee) : baseFee;
+        const expectedTotal = actualMonthsCount * baseFee;
         const pendingAmt = expectedTotal - totalAmt;
 
         document.getElementById('submit-receipt-btn').textContent = "Saving...";
 
         const rPayload = {
             flat_no: currentSelectedFlatNo, date: D.dateIn.value,
-            months_covered: `${formatMonthStr(D.mFromIn.value)} to ${formatMonthStr(D.mToIn.value)}`,
-            months_count: currentCalculatedMonths > 0 ? currentCalculatedMonths : 1, // Fallback to 1
+            months_covered: (D.mFromIn.value && D.mToIn.value) ? `${formatMonthStr(D.mFromIn.value)} to ${formatMonthStr(D.mToIn.value)}` : 'N/A',
+            months_count: actualMonthsCount,
             pending_amount: pendingAmt,
             cash_amount: cashAmt, online_amount: onlineAmt, remarks: D.remarks.value
         };
