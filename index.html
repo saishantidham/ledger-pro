@@ -74,7 +74,6 @@
         .uc-search-btn:active { background: rgba(0,0,0,0.05); }
         .uc-search-btn.selected { border-style: solid; border-color: var(--c-saffron); background: rgba(242, 101, 34, 0.05); }
         
-        /* Compact Grid Toggles */
         #column-toggles { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 6px; }
         .uc-checkbox-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0; }
         .uc-checkbox-wrap input { display: none; }
@@ -101,7 +100,6 @@
         .action-tray { display: flex; gap: 6px; margin-top: 8px; }
         .btn-micro { background: var(--c-bg); border: 1px solid var(--c-border); border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: 500; color: var(--c-text); display: flex; align-items: center; gap: 4px; cursor: pointer;}
         
-        /* Modal Height Increase */
         .h-90 { height: 90dvh; }
         .list-item { padding: 0.75rem 0; border-bottom: 1px solid rgba(0,0,0,0.06); cursor: pointer; transition: background 0.2s; }
     </style>
@@ -271,6 +269,7 @@
         </header>
 
         <div class="ultra-compact-form" style="padding: 1.5rem;">
+            
             <div class="fluent-card highlight-border mb-md">
                 <p class="text-sm font-semibold mb-sm">1. Select Date Range</p>
                 <div class="uc-row">
@@ -304,6 +303,21 @@
                 <p class="text-sm font-semibold mb-sm flex-between"><span>3. Select Columns</span> <span class="text-xs text-saffron" id="reset-cols" style="cursor:pointer;">Reset</span></p>
                 <div id="column-toggles">
                     </div>
+            </div>
+
+            <div class="fluent-card mb-md">
+                <p class="text-sm font-semibold mb-sm">4. Document Settings</p>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div>
+                        <label class="uc-label">Report Title <span style="text-transform:none; font-weight:500; font-size:9px;">(Use {from-date} & {to-date})</span></label>
+                        <input type="text" id="pdf-title-input" class="uc-input" value="Ledger Master Report ({from-date} to {to-date})">
+                    </div>
+                    <label class="uc-checkbox-wrap" style="height: auto; padding: 4px 0;">
+                        <input type="checkbox" id="pdf-totals-checkbox" checked>
+                        <span class="uc-checkbox-box"></span>
+                        <span class="uc-label" style="margin:0; text-transform:none; font-size:12px; font-weight:700; color:var(--c-text);">Calculate & Show Totals Row in PDF</span>
+                    </label>
+                </div>
             </div>
 
             <div class="flex-spacer"></div>
@@ -422,11 +436,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-    <script src="js/config.js?v=11"></script>
-    <script src="js/db.js?v=11"></script>
-    <script src="js/auth.js?v=11"></script>
-    <script src="js/engine.js?v=11"></script>
-    <script src="js/export.js?v=11"></script>
+    <script src="js/config.js?v=12"></script>
+    <script src="js/db.js?v=12"></script>
+    <script src="js/auth.js?v=12"></script>
+    <script src="js/engine.js?v=12"></script>
+    <script src="js/export.js?v=12"></script>
     
     <script>
         if ('serviceWorker' in navigator) {
