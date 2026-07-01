@@ -43,7 +43,6 @@ window.UX = {
 document.addEventListener('DOMContentLoaded', () => {
     UX.init();
 
-    // === NATIVE BACK BUTTON LOGIC (Android Style) ===
     history.pushState(null, document.title, location.href);
     window.addEventListener('popstate', function (event) {
         let overlayHandled = false;
@@ -55,18 +54,18 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             const workspace = document.getElementById('workspace-view');
             const exportView = document.getElementById('export-view');
-            if (workspace.classList.contains('active-view') || exportView.classList.contains('active-view')) {
+            if (workspace && workspace.classList.contains('active-view') || (exportView && exportView.classList.contains('active-view'))) {
                 switchView('hub');
                 overlayHandled = true;
             }
         }
-        // Repush state so app doesn't immediately close on next back press
         history.pushState(null, document.title, location.href);
     });
 
     function initKeyboardTrapFix() {
         if (!window.visualViewport) return;
         const workspace = document.getElementById('workspace-view');
+        if(!workspace) return;
         window.visualViewport.addEventListener('resize', () => {
             workspace.style.height = `${window.visualViewport.height}px`;
             if (window.visualViewport.height < window.innerHeight * 0.8) {
@@ -97,8 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const successModal = document.getElementById('success-modal-overlay');
 
     const D = {
-        toggle: document.getElementById('mode-toggle'),
-        rcptNo: document.getElementById('receipt-no'), dateIn: document.getElementById('receipt-date'), 
+        toggle: document.getElementById('mode-toggle'), rcptNo: document.getElementById('receipt-no'), dateIn: document.getElementById('receipt-date'), 
         flatBtn: document.getElementById('open-flat-search'), flatBtnText: document.getElementById('flat-btn-text'),
         name: document.getElementById('owner-name'), phone: document.getElementById('owner-phone'),
         baseFee: document.getElementById('base-fee'), isRented: document.getElementById('is-rented'),
@@ -106,8 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mToIn: document.getElementById('month-to'), mToDisp: document.getElementById('display-month-to'),
         mCalc: document.getElementById('months-calculated'), baseTotalCalc: document.getElementById('calculated-base-total'),
         cash: document.getElementById('cash-amount'), online: document.getElementById('online-amount'),
-        total: document.getElementById('total-amount-display'),
-        remarks: document.getElementById('remarks'), charCount: document.getElementById('char-count')
+        total: document.getElementById('total-amount-display'), remarks: document.getElementById('remarks'), charCount: document.getElementById('char-count')
     };
 
     let currentSelectedFlatNo = null;
@@ -125,19 +122,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return encodeURIComponent(template.replace('{name}', name).replace('{amount}', amount).replace('{flat}', flat).replace('{rcpt}', rcpt).replace('{link}', `${basePath}receipt.html?id=${uuid}`));
     }
 
-    // === RECEIPT AUTO-INCREMENT OVERRIDE ENGINE ===
     function getNextRcptStr() {
         if (!receiptsData || receiptsData.length === 0) return "14000";
         let max = 0;
-        receiptsData.forEach(r => {
-            let num = parseInt(r.receipt_no);
-            if (!isNaN(num) && num > max) max = num;
-        });
+        receiptsData.forEach(r => { let num = parseInt(r.receipt_no); if (!isNaN(num) && num > max) max = num; });
         return max > 0 ? (max + 1).toString() : "14000";
     }
 
     function updateNextReceiptPlaceholder() {
-        D.rcptNo.placeholder = `Auto (${getNextRcptStr()})`;
+        if(D.rcptNo) D.rcptNo.placeholder = `Auto (${getNextRcptStr()})`;
     }
 
     window.loadHubData = async function() {
@@ -154,13 +147,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function switchView(viewName) {
-        Object.values(views).forEach(v => v.classList.replace('active-view', 'hidden-view'));
-        views[viewName].classList.replace('hidden-view', 'active-view');
+        Object.values(views).forEach(v => { if(v) v.classList.replace('active-view', 'hidden-view'); });
+        if(views[viewName]) views[viewName].classList.replace('hidden-view', 'active-view');
         window.scrollTo(0, 0);
     }
 
-    document.getElementById('hub-settings-btn').addEventListener('click', () => { UX.playClick(); document.getElementById('settings-sheet').classList.remove('hidden'); });
-    document.getElementById('close-settings-btn').addEventListener('click', () => { UX.playClick(); document.getElementById('settings-sheet').classList.add('hidden'); });
+    const hubSettingsBtn = document.getElementById('hub-settings-btn');
+    if(hubSettingsBtn) hubSettingsBtn.addEventListener('click', () => { UX.playClick(); document.getElementById('settings-sheet').classList.remove('hidden'); });
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    if(closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => { UX.playClick(); document.getElementById('settings-sheet').classList.add('hidden'); });
 
     document.getElementById('prev-month-btn')?.addEventListener('click', () => { currentHubDate.setMonth(currentHubDate.getMonth() - 1); renderCalendar(); });
     document.getElementById('next-month-btn')?.addEventListener('click', () => { currentHubDate.setMonth(currentHubDate.getMonth() + 1); renderCalendar(); });
@@ -168,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCalendar() {
         if(!calGrid) return;
         const year = currentHubDate.getFullYear(); const month = currentHubDate.getMonth();
-        calHeader.textContent = currentHubDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        if(calHeader) calHeader.textContent = currentHubDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const activeDates = new Set(receiptsData.map(r => r.date));
@@ -180,7 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
             const hasData = activeDates.has(dateStr) ? 'has-data' : '';
             const isToday = (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) ? 'selected' : '';
-            
             const dayEl = document.createElement('div');
             dayEl.className = `cal-day ${hasData} ${isToday}`;
             dayEl.textContent = i;
@@ -196,11 +190,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (r.date === todayStr) tToday += Number(r.total_amount || 0);
             if (r.date.startsWith(monthPrefix)) tMonth += Number(r.total_amount || 0);
         });
-        document.getElementById('stat-today').textContent = `₹${tToday}`; 
-        document.getElementById('stat-month').textContent = `₹${tMonth}`;
+        const statToday = document.getElementById('stat-today');
+        const statMonth = document.getElementById('stat-month');
+        if(statToday) statToday.textContent = `₹${tToday}`; 
+        if(statMonth) statMonth.textContent = `₹${tMonth}`;
     }
 
-    document.getElementById('view-recent-btn')?.addEventListener('click', () => {
+    const viewRecentBtn = document.getElementById('view-recent-btn');
+    if(viewRecentBtn) viewRecentBtn.addEventListener('click', () => {
         const sheet = document.getElementById('recent-logs-sheet');
         const list = document.getElementById('recent-logs-list');
         list.innerHTML = '';
@@ -253,27 +250,38 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.generateReceipt = function(uuid) { UX.playClick(); window.open(`receipt.html?id=${uuid}`, '_blank'); };
-    window.editOldLog = function(uuid) { UX.playClick(); document.getElementById('recent-logs-sheet').classList.add('hidden'); switchView('workspace'); D.toggle.checked = true; D.toggle.dispatchEvent(new Event('change')); };
+    window.editOldLog = function(uuid) { 
+        UX.playClick(); 
+        const sheet = document.getElementById('recent-logs-sheet');
+        if(sheet) sheet.classList.add('hidden'); 
+        switchView('workspace'); 
+        if(D.toggle) {
+            D.toggle.checked = true; 
+            D.toggle.dispatchEvent(new Event('change')); 
+        }
+    };
 
     function openWorkspace(dateStr) {
         selectedSessionDate = new Date(dateStr);
-        activeSessionDateDisplay.textContent = selectedSessionDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        D.dateIn.value = dateStr; 
+        if(activeSessionDateDisplay) activeSessionDateDisplay.textContent = selectedSessionDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        if(D.dateIn) D.dateIn.value = dateStr; 
         updateNextReceiptPlaceholder();
         switchView('workspace');
     }
-    document.getElementById('back-to-hub-btn').onclick = () => { switchView('hub'); window.loadHubData(); };
+    const backToHubBtn = document.getElementById('back-to-hub-btn');
+    if(backToHubBtn) backToHubBtn.onclick = () => { switchView('hub'); window.loadHubData(); };
 
-    // === ADVANCED FUZZY FLAT SEARCH ===
     const searchModal = document.getElementById('flat-search-modal');
     const searchInput = document.getElementById('flat-search-input');
     const flatList = document.getElementById('flat-list');
 
-    D.flatBtn.onclick = () => { searchModal.classList.remove('hidden'); renderFlatList(''); searchInput.focus(); };
-    document.getElementById('close-flat-search').onclick = () => searchModal.classList.add('hidden');
-    searchInput.addEventListener('input', (e) => renderFlatList(e.target.value));
+    if(D.flatBtn) D.flatBtn.onclick = () => { if(searchModal) searchModal.classList.remove('hidden'); renderFlatList(''); if(searchInput) searchInput.focus(); };
+    const closeFlatSearch = document.getElementById('close-flat-search');
+    if(closeFlatSearch) closeFlatSearch.onclick = () => { if(searchModal) searchModal.classList.add('hidden'); };
+    if(searchInput) searchInput.addEventListener('input', (e) => renderFlatList(e.target.value));
 
     function renderFlatList(filter) {
+        if(!flatList) return;
         const cleanFilter = filter.toLowerCase().replace(/[-\s_]/g, '');
         const filterNoZeros = cleanFilter.replace(/0/g, '');
 
@@ -298,11 +306,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function selectFlat(flat) {
         currentSelectedFlatNo = flat.flat_no;
-        D.flatBtnText.textContent = `${flat.flat_no} - ${flat.owner_name}`;
-        D.flatBtn.classList.add('selected');
-        D.name.value = flat.owner_name; D.phone.value = flat.phone_number || '';
-        D.baseFee.value = flat.usual_fee; D.isRented.checked = flat.is_rented;
-        handleRentedToggle(flat.is_rented); searchModal.classList.add('hidden'); calculateMonths();
+        if(D.flatBtnText) D.flatBtnText.textContent = `${flat.flat_no} - ${flat.owner_name}`;
+        if(D.flatBtn) D.flatBtn.classList.add('selected');
+        if(D.name) D.name.value = flat.owner_name; 
+        if(D.phone) D.phone.value = flat.phone_number || '';
+        if(D.baseFee) D.baseFee.value = flat.usual_fee; 
+        if(D.isRented) D.isRented.checked = flat.is_rented;
+        handleRentedToggle(flat.is_rented); 
+        if(searchModal) searchModal.classList.add('hidden'); 
+        calculateMonths();
     }
 
     function formatMonthStr(dateStr) {
@@ -310,39 +322,43 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Date(dateStr + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     }
 
-    D.dateIn.addEventListener('change', (e) => { 
+    if(D.dateIn) D.dateIn.addEventListener('change', (e) => { 
         selectedSessionDate = new Date(e.target.value);
-        activeSessionDateDisplay.textContent = selectedSessionDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        if(activeSessionDateDisplay) activeSessionDateDisplay.textContent = selectedSessionDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
     });
 
     function handleRentedToggle(isChecked) {
+        if(!D.name) return;
         let name = D.name.value.replace(/^\(R\)\s*/, ''); 
         D.name.value = isChecked && name.length > 0 ? `(R) ${name}` : name;
     }
-    D.isRented.addEventListener('change', (e) => handleRentedToggle(e.target.checked));
+    if(D.isRented) D.isRented.addEventListener('change', (e) => handleRentedToggle(e.target.checked));
 
-    D.toggle.addEventListener('change', (e) => {
+    if(D.toggle) D.toggle.addEventListener('change', (e) => {
         const editMode = e.target.checked;
-        D.rcptNo.disabled = !editMode;
-        if (editMode) {
-            D.rcptNo.placeholder = "Enter Rcpt No";
-            D.rcptNo.focus();
-            UX.vibrateLight();
-        } else {
-            updateNextReceiptPlaceholder();
+        if(D.rcptNo) {
+            D.rcptNo.disabled = !editMode;
+            if (editMode) {
+                D.rcptNo.placeholder = "Enter Rcpt No";
+                D.rcptNo.focus();
+                UX.vibrateLight();
+            } else {
+                updateNextReceiptPlaceholder();
+            }
         }
-        D.dateIn.disabled = !editMode;
+        if(D.dateIn) D.dateIn.disabled = !editMode;
     });
 
-    D.remarks.addEventListener('input', (e) => { D.charCount.textContent = `${e.target.value.length}/50`; });
+    if(D.remarks) D.remarks.addEventListener('input', (e) => { if(D.charCount) D.charCount.textContent = `${e.target.value.length}/50`; });
 
     function calculateMonths() {
+        if (!D.mFromIn || !D.mToIn || !D.mCalc || !D.baseTotalCalc) return;
         if (!D.mFromIn.value || !D.mToIn.value) {
             currentCalculatedMonths = 0; D.mCalc.textContent = "0 Months"; D.baseTotalCalc.textContent = "₹0"; return;
         }
         const d1 = new Date(D.mFromIn.value + '-01'); const d2 = new Date(D.mToIn.value + '-01');
         let m = (d2.getFullYear() - d1.getFullYear()) * 12 - d1.getMonth() + d2.getMonth() + 1;
-        const fee = parseFloat(D.baseFee.value) || 0;
+        const fee = parseFloat(D.baseFee ? D.baseFee.value : 0) || 0;
 
         if (m > 0) {
             currentCalculatedMonths = m; D.mCalc.textContent = `${m} Months`; D.mCalc.className = 'calc-label text-success'; D.baseTotalCalc.textContent = `₹${m * fee}`;
@@ -351,14 +367,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    D.mFromIn.addEventListener('change', (e) => { D.mFromDisp.textContent = formatMonthStr(e.target.value); D.mFromDisp.classList.remove('text-muted'); calculateMonths(); }); 
-    D.mToIn.addEventListener('change', (e) => { D.mToDisp.textContent = formatMonthStr(e.target.value); D.mToDisp.classList.remove('text-muted'); calculateMonths(); });
-    D.baseFee.addEventListener('input', calculateMonths);
+    if(D.mFromIn) D.mFromIn.addEventListener('change', (e) => { if(D.mFromDisp) { D.mFromDisp.textContent = formatMonthStr(e.target.value); D.mFromDisp.classList.remove('text-muted'); } calculateMonths(); }); 
+    if(D.mToIn) D.mToIn.addEventListener('change', (e) => { if(D.mToDisp) { D.mToDisp.textContent = formatMonthStr(e.target.value); D.mToDisp.classList.remove('text-muted'); } calculateMonths(); });
+    if(D.baseFee) D.baseFee.addEventListener('input', calculateMonths);
 
-    function calculateTotal() { D.total.textContent = `₹${(parseFloat(D.cash.value) || 0) + (parseFloat(D.online.value) || 0)}`; }
-    D.cash.addEventListener('input', calculateTotal); D.online.addEventListener('input', calculateTotal);
+    function calculateTotal() { if(D.total) D.total.textContent = `₹${(parseFloat(D.cash ? D.cash.value : 0) || 0) + (parseFloat(D.online ? D.online.value : 0) || 0)}`; }
+    if(D.cash) D.cash.addEventListener('input', calculateTotal); 
+    if(D.online) D.online.addEventListener('input', calculateTotal);
 
-    form.addEventListener('submit', async () => {
+    if(form) form.addEventListener('submit', async () => {
         if (!currentSelectedFlatNo) { UX.vibrateError(); return alert("Select a flat first."); }
         const cashAmt = parseFloat(D.cash.value) || 0; 
         const onlineAmt = parseFloat(D.online.value) || 0; 
@@ -370,17 +387,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const expectedTotal = actualMonthsCount * baseFee;
         const pendingAmt = expectedTotal - totalAmt; 
 
-        document.getElementById('submit-receipt-btn').textContent = "Saving...";
+        const submitBtn = document.getElementById('submit-receipt-btn');
+        if(submitBtn) submitBtn.textContent = "Saving...";
 
-        // FULL AUTO-INCREMENT FIX: Bypassing DB Sequence completely
+        // NEW: Smart Single Month Formatting Logic
+        let mFromVal = D.mFromIn.value;
+        let mToVal = D.mToIn.value;
+        let finalMonthsCovered = 'N/A';
+        
+        if (mFromVal && mToVal) {
+            if (mFromVal === mToVal) {
+                finalMonthsCovered = formatMonthStr(mFromVal); 
+            } else {
+                finalMonthsCovered = `${formatMonthStr(mFromVal)} to ${formatMonthStr(mToVal)}`;
+            }
+        }
+
         const rPayload = {
             flat_no: currentSelectedFlatNo, date: D.dateIn.value,
-            months_covered: (D.mFromIn.value && D.mToIn.value) ? `${formatMonthStr(D.mFromIn.value)} to ${formatMonthStr(D.mToIn.value)}` : 'N/A',
+            months_covered: finalMonthsCovered,
             months_count: actualMonthsCount, pending_amount: pendingAmt,
             cash_amount: cashAmt, online_amount: onlineAmt, remarks: D.remarks.value
         };
         
-        rPayload.receipt_no = (D.toggle.checked && D.rcptNo.value) ? D.rcptNo.value : getNextRcptStr();
+        rPayload.receipt_no = (D.toggle && D.toggle.checked && D.rcptNo && D.rcptNo.value) ? D.rcptNo.value : getNextRcptStr();
 
         try {
             await DB.updateFlatMaster(currentSelectedFlatNo, { owner_name: D.name.value, phone_number: D.phone.value, usual_fee: parseFloat(D.baseFee.value), is_rented: D.isRented.checked });
@@ -388,9 +418,12 @@ document.addEventListener('DOMContentLoaded', () => {
             receiptsData.push(inserted); 
 
             UX.vibrateSuccess();
-            document.getElementById('snapshot-text').textContent = `Rcpt: ${inserted.receipt_no} | ${D.name.value} | ₹${totalAmt}`;
-            successModal.classList.remove('hidden');
-            successModal.classList.add('visible');
+            const snapText = document.getElementById('snapshot-text');
+            if(snapText) snapText.textContent = `Rcpt: ${inserted.receipt_no} | ${D.name.value} | ₹${totalAmt}`;
+            if(successModal) {
+                successModal.classList.remove('hidden');
+                successModal.classList.add('visible');
+            }
             
             const cleanName = D.name.value.replace(/^\(R\)\s*/, '');
             const msg = buildWhatsAppMsg(cleanName, totalAmt, currentSelectedFlatNo, inserted.receipt_no, inserted.uuid);
@@ -399,9 +432,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (waPhone.length === 10) waPhone = '91' + waPhone;
             const waLink = waPhone.length > 5 ? `https://wa.me/${waPhone}?text=${msg}` : `https://wa.me/?text=${msg}`;
             
-            document.getElementById('btn-whatsapp-share').onclick = () => window.open(waLink, '_blank');
-            document.getElementById('btn-mail-share').onclick = () => window.open(`mailto:?subject=Maintenance Receipt ${inserted.receipt_no}&body=${msg}`, '_blank');
-            document.getElementById('btn-generate-receipt').onclick = () => generateReceipt(inserted.uuid);
+            const waShare = document.getElementById('btn-whatsapp-share');
+            if(waShare) waShare.onclick = () => window.open(waLink, '_blank');
+            const mailShare = document.getElementById('btn-mail-share');
+            if(mailShare) mailShare.onclick = () => window.open(`mailto:?subject=Maintenance Receipt ${inserted.receipt_no}&body=${msg}`, '_blank');
+            const genRcptBtn = document.getElementById('btn-generate-receipt');
+            if(genRcptBtn) genRcptBtn.onclick = () => generateReceipt(inserted.uuid);
 
         } catch (e) { 
             UX.vibrateError(); 
@@ -409,26 +445,38 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(e); 
         } 
         finally { 
-            document.getElementById('submit-receipt-btn').textContent = "Log Entry"; 
+            if(submitBtn) submitBtn.textContent = "Log Entry"; 
             updateNextReceiptPlaceholder(); 
         }
     });
 
-    document.getElementById('modal-next-btn').onclick = async () => {
-        successModal.classList.add('hidden');
-        successModal.classList.remove('visible');
+    const modalNextBtn = document.getElementById('modal-next-btn');
+    if(modalNextBtn) modalNextBtn.onclick = async () => {
+        if(successModal) {
+            successModal.classList.add('hidden');
+            successModal.classList.remove('visible');
+        }
         
         currentSelectedFlatNo = null; currentCalculatedMonths = 0;
-        D.flatBtn.classList.remove('selected'); D.flatBtnText.textContent = "Select Flat / Owner...";
-        D.name.value = ""; D.phone.value = ""; D.baseFee.value = ""; D.isRented.checked = false;
-        D.cash.value = ""; D.online.value = ""; D.total.textContent = "₹0";
-        D.remarks.value = ""; D.charCount.textContent = "0/50";
-        D.mFromIn.value = ""; D.mToIn.value = ""; 
-        D.mFromDisp.textContent = "MMM YYYY"; D.mFromDisp.classList.add('text-muted');
-        D.mToDisp.textContent = "MMM YYYY"; D.mToDisp.classList.add('text-muted');
-        D.mCalc.textContent = "0 Months"; D.baseTotalCalc.textContent = "₹0";
+        if(D.flatBtn) D.flatBtn.classList.remove('selected'); 
+        if(D.flatBtnText) D.flatBtnText.textContent = "Select Flat / Owner...";
+        if(D.name) D.name.value = ""; 
+        if(D.phone) D.phone.value = ""; 
+        if(D.baseFee) D.baseFee.value = ""; 
+        if(D.isRented) D.isRented.checked = false;
+        if(D.cash) D.cash.value = ""; 
+        if(D.online) D.online.value = ""; 
+        if(D.total) D.total.textContent = "₹0";
+        if(D.remarks) D.remarks.value = ""; 
+        if(D.charCount) D.charCount.textContent = "0/50";
+        if(D.mFromIn) D.mFromIn.value = ""; 
+        if(D.mToIn) D.mToIn.value = ""; 
+        if(D.mFromDisp) { D.mFromDisp.textContent = "MMM YYYY"; D.mFromDisp.classList.add('text-muted'); }
+        if(D.mToDisp) { D.mToDisp.textContent = "MMM YYYY"; D.mToDisp.classList.add('text-muted'); }
+        if(D.mCalc) D.mCalc.textContent = "0 Months"; 
+        if(D.baseTotalCalc) D.baseTotalCalc.textContent = "₹0";
         
-        if (D.toggle.checked) { D.toggle.checked = false; D.toggle.dispatchEvent(new Event('change')); }
+        if (D.toggle && D.toggle.checked) { D.toggle.checked = false; D.toggle.dispatchEvent(new Event('change')); }
         const formContainer = document.querySelector('.ultra-compact-form');
         if (formContainer) formContainer.scrollTo({ top: 0, behavior: 'smooth' });
 
