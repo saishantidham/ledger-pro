@@ -152,8 +152,74 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo(0, 0);
     }
 
+    // === NEW VAULT BACKUP LOGIC ===
+    const lastBackupText = document.getElementById('last-backup-text');
+    function updateBackupText() {
+        if(!lastBackupText) return;
+        const lastTs = localStorage.getItem('last_backup_date');
+        if(!lastTs) {
+            lastBackupText.textContent = "Last Backup: Never";
+            lastBackupText.style.color = "var(--c-error)";
+        } else {
+            const d = new Date(parseInt(lastTs));
+            const daysAgo = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+            lastBackupText.textContent = `Last Backup: ${d.toLocaleDateString()} (${daysAgo} days ago)`;
+            lastBackupText.style.color = daysAgo > 7 ? "var(--c-error)" : "var(--c-muted)";
+        }
+    }
+
+    const backupBtn = document.getElementById('btn-local-backup');
+    if(backupBtn) {
+        backupBtn.onclick = async () => {
+            UX.playClick();
+            backupBtn.textContent = "Generating Vault CSV...";
+            try {
+                // Fetch strictly ordered pristine data
+                const { data, error } = await supabaseClient.from('receipts').select('*').order('serial_no', { ascending: true });
+                if(error) throw error;
+                if(!data || data.length === 0) return alert("Database is empty. No data to backup!");
+
+                const headers = Object.keys(data[0]);
+                let csvContent = headers.join(',') + '\n';
+
+                data.forEach(row => {
+                    let rowStr = headers.map(header => {
+                        let val = row[header];
+                        if(val === null || val === undefined) return '';
+                        // Escape internal quotes and wrap value in quotes to ensure commas in remarks don't break the CSV columns
+                        return `"${String(val).replace(/"/g, '""')}"`;
+                    }).join(',');
+                    csvContent += rowStr + '\n';
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const dateStr = new Date().toISOString().split('T')[0];
+                link.href = URL.createObjectURL(blob);
+                link.download = `LedgerPro_Vault_Backup_${dateStr}.csv`;
+                link.click();
+
+                localStorage.setItem('last_backup_date', Date.now().toString());
+                updateBackupText();
+                
+                backupBtn.textContent = "Backup Secured!";
+                setTimeout(() => backupBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Vault Backup (CSV)`, 2500);
+
+            } catch (err) {
+                console.error(err);
+                alert("Backup failed. Check console.");
+                backupBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Vault Backup (CSV)`;
+            }
+        };
+    }
+
     const hubSettingsBtn = document.getElementById('hub-settings-btn');
-    if(hubSettingsBtn) hubSettingsBtn.addEventListener('click', () => { UX.playClick(); document.getElementById('settings-sheet').classList.remove('hidden'); });
+    if(hubSettingsBtn) hubSettingsBtn.addEventListener('click', () => { 
+        UX.playClick(); 
+        updateBackupText(); // Refresh the text when modal opens
+        document.getElementById('settings-sheet').classList.remove('hidden'); 
+    });
+    
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     if(closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => { UX.playClick(); document.getElementById('settings-sheet').classList.add('hidden'); });
 
@@ -390,7 +456,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitBtn = document.getElementById('submit-receipt-btn');
         if(submitBtn) submitBtn.textContent = "Saving...";
 
-        // NEW: Smart Single Month Formatting Logic
         let mFromVal = D.mFromIn.value;
         let mToVal = D.mToIn.value;
         let finalMonthsCovered = 'N/A';
