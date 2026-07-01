@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let displayedRowsCount = 0;
     const CHUNK_SIZE = 100;
 
-    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v12')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
+    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v14')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
 
     const exportView = document.getElementById('export-view');
     const hubView = document.getElementById('hub-view');
@@ -34,49 +34,54 @@ document.addEventListener('DOMContentLoaded', () => {
     function initExportUI() {
         const today = new Date();
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        dateFrom.value = firstDay.toISOString().split('T')[0];
-        dateTo.value = today.toISOString().split('T')[0];
+        if(dateFrom) dateFrom.value = firstDay.toISOString().split('T')[0];
+        if(dateTo) dateTo.value = today.toISOString().split('T')[0];
 
-        toggleContainer.innerHTML = '';
-        COLS.forEach(col => {
-            const isChecked = selectedCols.includes(col.id) ? 'checked' : '';
-            const html = `
-                <label class="uc-checkbox-wrap">
-                    <input type="checkbox" value="${col.id}" class="col-toggle" ${isChecked}>
-                    <span class="uc-checkbox-box"></span>
-                    <span class="uc-label" style="margin:0; text-transform:none;">${col.label}</span>
-                </label>
-            `;
-            toggleContainer.insertAdjacentHTML('beforeend', html);
-        });
+        if(toggleContainer) {
+            toggleContainer.innerHTML = '';
+            COLS.forEach(col => {
+                const isChecked = selectedCols.includes(col.id) ? 'checked' : '';
+                const html = `
+                    <label class="uc-checkbox-wrap">
+                        <input type="checkbox" value="${col.id}" class="col-toggle" ${isChecked}>
+                        <span class="uc-checkbox-box"></span>
+                        <span class="uc-label" style="margin:0; text-transform:none;">${col.label}</span>
+                    </label>
+                `;
+                toggleContainer.insertAdjacentHTML('beforeend', html);
+            });
+        }
 
         document.querySelectorAll('.col-toggle').forEach(chk => {
             chk.addEventListener('change', () => {
                 selectedCols = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb => cb.value);
-                localStorage.setItem('exportCols_v12', JSON.stringify(selectedCols));
+                localStorage.setItem('exportCols_v14', JSON.stringify(selectedCols));
                 if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
             });
         });
     }
 
-    document.getElementById('reset-cols').onclick = () => {
-        localStorage.removeItem('exportCols_v12');
+    const resetColsBtn = document.getElementById('reset-cols');
+    if(resetColsBtn) resetColsBtn.onclick = () => {
+        localStorage.removeItem('exportCols_v14');
         selectedCols = COLS.filter(c => c.default).map(c => c.id);
         initExportUI();
         if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
     };
 
-    document.getElementById('view-reports-btn').onclick = () => {
+    const viewReportsBtn = document.getElementById('view-reports-btn');
+    if(viewReportsBtn) viewReportsBtn.onclick = () => {
         if(window.UX && window.UX.playClick) window.UX.playClick();
         initExportUI();
-        hubView.classList.replace('active-view', 'hidden-view');
-        exportView.classList.replace('hidden-view', 'active-view');
+        if(hubView) hubView.classList.replace('active-view', 'hidden-view');
+        if(exportView) exportView.classList.replace('hidden-view', 'active-view');
     };
 
-    document.getElementById('back-from-export-btn').onclick = () => {
+    const backExportBtn = document.getElementById('back-from-export-btn');
+    if(backExportBtn) backExportBtn.onclick = () => {
         if(window.UX && window.UX.playClick) window.UX.playClick();
-        exportView.classList.replace('active-view', 'hidden-view');
-        hubView.classList.replace('hidden-view', 'active-view');
+        if(exportView) exportView.classList.replace('active-view', 'hidden-view');
+        if(hubView) hubView.classList.replace('hidden-view', 'active-view');
     };
 
     function parseFlatDetails(flatNoStr) {
@@ -88,9 +93,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function compileData() {
         const flats = await DB.fetchFlats();
-        const receipts = await DB.fetchReceiptsByDate(dateFrom.value, dateTo.value);
-        const hideBlank = document.getElementById('hide-blank-flats').checked;
-        const sortMethod = document.getElementById('export-sort-by').value;
+        const fromVal = dateFrom ? dateFrom.value : '';
+        const toVal = dateTo ? dateTo.value : '';
+        const receipts = await DB.fetchReceiptsByDate(fromVal, toVal);
+        
+        const hideBlankEl = document.getElementById('hide-blank-flats');
+        const hideBlank = hideBlankEl ? hideBlankEl.checked : false;
+        
+        const sortMethodEl = document.getElementById('export-sort-by');
+        const sortMethod = sortMethodEl ? sortMethodEl.value : 'flat';
 
         let rawData = [];
 
@@ -146,37 +157,41 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.getElementById('btn-generate-preview').onclick = async () => {
+    const genPreviewBtn = document.getElementById('btn-generate-preview');
+    if(genPreviewBtn) genPreviewBtn.onclick = async () => {
         if(window.UX && window.UX.playClick) window.UX.playClick();
-        const btn = document.getElementById('btn-generate-preview');
-        btn.textContent = "Fetching Data...";
+        genPreviewBtn.textContent = "Fetching Data...";
         try {
             await compileData();
             displayedRowsCount = 0;
             const thead = document.getElementById('preview-thead');
             const tbody = document.getElementById('preview-tbody');
-            thead.innerHTML = ''; tbody.innerHTML = '';
+            if(thead) thead.innerHTML = ''; 
+            if(tbody) tbody.innerHTML = '';
 
             const activeCols = COLS.filter(c => selectedCols.includes(c.id));
             let trHead = '<tr>';
             activeCols.forEach(c => trHead += `<th style="padding:8px; text-align:left; border-bottom:2px solid #ddd; white-space:nowrap;">${c.label}</th>`);
             trHead += '</tr>';
-            thead.innerHTML = trHead;
+            if(thead) thead.innerHTML = trHead;
 
             renderNextChunk();
-            document.getElementById('preview-modal-overlay').classList.remove('hidden');
+            const modalOverlay = document.getElementById('preview-modal-overlay');
+            if(modalOverlay) modalOverlay.classList.remove('hidden');
 
         } catch (e) {
             console.error(e); alert("Failed to compile report.");
         } finally {
-            btn.textContent = "Generate Quick Preview";
+            genPreviewBtn.textContent = "Generate Quick Preview";
         }
     };
 
-    document.getElementById('btn-load-more').onclick = () => renderNextChunk();
+    const loadMoreBtn = document.getElementById('btn-load-more');
+    if(loadMoreBtn) loadMoreBtn.onclick = () => renderNextChunk();
 
     function renderNextChunk() {
         const tbody = document.getElementById('preview-tbody');
+        if(!tbody) return;
         const activeCols = COLS.filter(c => selectedCols.includes(c.id));
         const chunk = currentExportData.slice(displayedRowsCount, displayedRowsCount + CHUNK_SIZE);
         
@@ -196,14 +211,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         displayedRowsCount += chunk.length;
-        const loadMoreBtn = document.getElementById('preview-load-more');
-        if (displayedRowsCount < currentExportData.length) loadMoreBtn.style.display = 'block';
-        else loadMoreBtn.style.display = 'none';
+        const loadMoreContainer = document.getElementById('preview-load-more');
+        if(loadMoreContainer) {
+            if (displayedRowsCount < currentExportData.length) loadMoreContainer.style.display = 'block';
+            else loadMoreContainer.style.display = 'none';
+        }
     }
 
-    document.getElementById('close-preview-btn').onclick = () => document.getElementById('preview-modal-overlay').classList.add('hidden');
+    const closePreviewBtn = document.getElementById('close-preview-btn');
+    if(closePreviewBtn) closePreviewBtn.onclick = () => {
+        const overlay = document.getElementById('preview-modal-overlay');
+        if(overlay) overlay.classList.add('hidden');
+    }
 
-    // === UPGRADED EXCEL STYLING ===
     async function executeExcelExport() {
         if (typeof ExcelJS === 'undefined') return alert("ExcelJS is loading. Please wait 2 seconds.");
         const workbook = new ExcelJS.Workbook();
@@ -214,9 +234,9 @@ document.addEventListener('DOMContentLoaded', () => {
             header: c.label, key: c.id, width: ['owner', 'remarks', 'months'].includes(c.id) ? 20 : 13
         }));
 
-        // Beautiful Saffron Corporate Header
+        // Saffron Corporate Header
         const headerRow = sheet.getRow(1);
-        headerRow.height = 24; // Better breathing room
+        headerRow.height = 24; 
         headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
         headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
         headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF26522' } }; 
@@ -252,34 +272,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         
-        // Parse Title for file name
-        let dFromFormat = dateFrom.value.split('-').reverse().join('-');
-        let dToFormat = dateTo.value.split('-').reverse().join('-');
+        const dFromFormat = dateFrom ? dateFrom.value.split('-').reverse().join('-') : 'All';
+        const dToFormat = dateTo ? dateTo.value.split('-').reverse().join('-') : 'All';
         link.download = `Ledger_Report_${dFromFormat}_to_${dToFormat}.xlsx`;
         link.click();
     }
 
-    // === PDF EXPORT WITH CUSTOM TITLE & TOTALS CHECKBOX ===
     function executePDFExport() {
         if (!window.jspdf) return alert("jsPDF is loading. Please wait 2 seconds.");
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'A4' }); 
         const activeCols = COLS.filter(c => selectedCols.includes(c.id));
-        const includeTotals = document.getElementById('pdf-totals-checkbox').checked;
+        
+        const totalsCheckbox = document.getElementById('pdf-totals-checkbox');
+        const includeTotals = totalsCheckbox ? totalsCheckbox.checked : false;
 
-        // Custom Title Logic
-        let dFromFormat = dateFrom.value.split('-').reverse().join('/');
-        let dToFormat = dateTo.value.split('-').reverse().join('/');
-        let rawTitle = document.getElementById('pdf-title-input').value || "Ledger Master Report ({from-date} to {to-date})";
+        const dFromFormat = dateFrom ? dateFrom.value.split('-').reverse().join('/') : 'All';
+        const dToFormat = dateTo ? dateTo.value.split('-').reverse().join('/') : 'All';
+        
+        const titleInput = document.getElementById('pdf-title-input');
+        let rawTitle = titleInput ? titleInput.value : "Ledger Master Report ({from-date} to {to-date})";
         let finalTitle = rawTitle.replace('{from-date}', dFromFormat).replace('{to-date}', dToFormat);
 
+        // Safe replace for ₹ to Rs.
         const tableColumn = activeCols.map(c => c.label.replace(/₹/g, 'Rs.'));
         const tableRows = currentExportData.map(row => activeCols.map(c => {
             let val = row[c.id] !== '' && row[c.id] !== null ? String(row[c.id]) : '-';
             return val.replace(/₹/g, 'Rs.'); 
         }));
 
-        // Smart Totals Row Appender
         if (includeTotals && currentExportData.length > 0) {
             const totalRow = activeCols.map((c, index) => {
                 if (index === 0) return 'TOTAL SUMMARY';
@@ -287,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const sum = currentExportData.reduce((acc, row) => acc + (Number(row[c.id]) || 0), 0);
                     return `Rs.${sum}`;
                 }
-                return ''; // Leave non-math fields totally blank at bottom
+                return ''; 
             });
             tableRows.push(totalRow);
         }
@@ -301,7 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
             headStyles: { fillColor: [242, 101, 34], textColor: [255,255,255], fontStyle: 'bold', halign: 'center', valign: 'middle' },
             alternateRowStyles: { fillColor: [249, 250, 251] }, margin: { top: 40, left: 20, right: 20 },
             didParseCell: function(data) {
-                // Style Pending Amount column
                 if (data.section === 'body' && activeCols[data.column.index].id === 'pending_amount') {
                     let rawVal = data.cell.raw;
                     if (typeof rawVal === 'string') rawVal = rawVal.replace('Rs.', '');
@@ -310,36 +330,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (val < 0) { data.cell.styles.textColor = [46, 125, 50]; data.cell.styles.fontStyle = 'bold'; }
                 }
 
-                // If this is the Total Summary Row, highlight it
                 if (data.section === 'body' && includeTotals && data.row.index === tableRows.length - 1) {
                     data.cell.styles.fontStyle = 'bold';
-                    data.cell.styles.fillColor = [255, 245, 235]; // Extremely light saffron tint
-                    data.cell.styles.textColor = [242, 101, 34]; // Saffron orange text
+                    data.cell.styles.fillColor = [255, 245, 235]; 
+                    data.cell.styles.textColor = [242, 101, 34]; 
                 }
             }
         });
 
-        doc.save(`Ledger_Report_${dateFrom.value}_to_${dateTo.value}.pdf`);
+        doc.save(`Ledger_Report_${dFromFormat.replace(/\//g,'-')}_to_${dToFormat.replace(/\//g,'-')}.pdf`);
     }
 
-    document.getElementById('btn-dl-excel').onclick = () => { if(window.UX) UX.playClick(); executeExcelExport(); };
-    document.getElementById('btn-dl-pdf').onclick = () => { if(window.UX) UX.playClick(); executePDFExport(); };
+    const btnDlExcel = document.getElementById('btn-dl-excel');
+    if(btnDlExcel) btnDlExcel.onclick = () => { if(window.UX) UX.playClick(); executeExcelExport(); };
+    
+    const btnDlPdf = document.getElementById('btn-dl-pdf');
+    if(btnDlPdf) btnDlPdf.onclick = () => { if(window.UX) UX.playClick(); executePDFExport(); };
 
-    document.getElementById('btn-direct-excel').onclick = async () => {
+    const btnDirectExcel = document.getElementById('btn-direct-excel');
+    if(btnDirectExcel) btnDirectExcel.onclick = async () => {
         if(window.UX) UX.playClick();
-        const btn = document.getElementById('btn-direct-excel');
-        btn.textContent = "Processing...";
+        btnDirectExcel.textContent = "Processing...";
         await compileData();
         await executeExcelExport();
-        btn.textContent = "Direct Excel";
+        btnDirectExcel.textContent = "Direct Excel";
     };
 
-    document.getElementById('btn-direct-pdf').onclick = async () => {
+    const btnDirectPdf = document.getElementById('btn-direct-pdf');
+    if(btnDirectPdf) btnDirectPdf.onclick = async () => {
         if(window.UX) UX.playClick();
-        const btn = document.getElementById('btn-direct-pdf');
-        btn.textContent = "Processing...";
+        btnDirectPdf.textContent = "Processing...";
         await compileData();
         executePDFExport();
-        btn.textContent = "Direct PDF";
+        btnDirectPdf.textContent = "Direct PDF";
     };
 });
