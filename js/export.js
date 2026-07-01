@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let displayedRowsCount = 0;
     const CHUNK_SIZE = 100;
 
-    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v11')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
+    let selectedCols = JSON.parse(localStorage.getItem('exportCols_v12')) || COLS.map(c => c.id).filter((_, i) => COLS[i].default);
 
     const exportView = document.getElementById('export-view');
     const hubView = document.getElementById('hub-view');
@@ -53,14 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.col-toggle').forEach(chk => {
             chk.addEventListener('change', () => {
                 selectedCols = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb => cb.value);
-                localStorage.setItem('exportCols_v11', JSON.stringify(selectedCols));
+                localStorage.setItem('exportCols_v12', JSON.stringify(selectedCols));
                 if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
             });
         });
     }
 
     document.getElementById('reset-cols').onclick = () => {
-        localStorage.removeItem('exportCols_v11');
+        localStorage.removeItem('exportCols_v12');
         selectedCols = COLS.filter(c => c.default).map(c => c.id);
         initExportUI();
         if(window.UX && window.UX.vibrateLight) window.UX.vibrateLight();
@@ -203,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('close-preview-btn').onclick = () => document.getElementById('preview-modal-overlay').classList.add('hidden');
 
+    // === UPGRADED EXCEL STYLING ===
     async function executeExcelExport() {
         if (typeof ExcelJS === 'undefined') return alert("ExcelJS is loading. Please wait 2 seconds.");
         const workbook = new ExcelJS.Workbook();
@@ -213,10 +214,12 @@ document.addEventListener('DOMContentLoaded', () => {
             header: c.label, key: c.id, width: ['owner', 'remarks', 'months'].includes(c.id) ? 20 : 13
         }));
 
+        // Beautiful Saffron Corporate Header
         const headerRow = sheet.getRow(1);
-        headerRow.font = { bold: true };
-        headerRow.alignment = { horizontal: 'center' };
-        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+        headerRow.height = 24; // Better breathing room
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF26522' } }; 
         
         currentExportData.forEach(rowData => {
             const row = sheet.addRow(rowData);
@@ -248,37 +251,70 @@ document.addEventListener('DOMContentLoaded', () => {
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `Ledger_Report_${dateFrom.value}_to_${dateTo.value}.xlsx`;
+        
+        // Parse Title for file name
+        let dFromFormat = dateFrom.value.split('-').reverse().join('-');
+        let dToFormat = dateTo.value.split('-').reverse().join('-');
+        link.download = `Ledger_Report_${dFromFormat}_to_${dToFormat}.xlsx`;
         link.click();
     }
 
+    // === PDF EXPORT WITH CUSTOM TITLE & TOTALS CHECKBOX ===
     function executePDFExport() {
         if (!window.jspdf) return alert("jsPDF is loading. Please wait 2 seconds.");
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'A4' }); 
         const activeCols = COLS.filter(c => selectedCols.includes(c.id));
+        const includeTotals = document.getElementById('pdf-totals-checkbox').checked;
 
-        // CRITICAL FIX: Replace '₹' with 'Rs.' purely for the PDF generation so Helvetica renders smoothly without falling back to Courier.
+        // Custom Title Logic
+        let dFromFormat = dateFrom.value.split('-').reverse().join('/');
+        let dToFormat = dateTo.value.split('-').reverse().join('/');
+        let rawTitle = document.getElementById('pdf-title-input').value || "Ledger Master Report ({from-date} to {to-date})";
+        let finalTitle = rawTitle.replace('{from-date}', dFromFormat).replace('{to-date}', dToFormat);
+
         const tableColumn = activeCols.map(c => c.label.replace(/₹/g, 'Rs.'));
         const tableRows = currentExportData.map(row => activeCols.map(c => {
             let val = row[c.id] !== '' && row[c.id] !== null ? String(row[c.id]) : '-';
             return val.replace(/₹/g, 'Rs.'); 
         }));
 
+        // Smart Totals Row Appender
+        if (includeTotals && currentExportData.length > 0) {
+            const totalRow = activeCols.map((c, index) => {
+                if (index === 0) return 'TOTAL SUMMARY';
+                if (['cash', 'online', 'total', 'pending_amount'].includes(c.id)) {
+                    const sum = currentExportData.reduce((acc, row) => acc + (Number(row[c.id]) || 0), 0);
+                    return `Rs.${sum}`;
+                }
+                return ''; // Leave non-math fields totally blank at bottom
+            });
+            tableRows.push(totalRow);
+        }
+
         doc.setFontSize(14);
-        doc.text(`Ledger Master Report (${dateFrom.value} to ${dateTo.value})`, 40, 40);
+        doc.text(finalTitle, 40, 40);
         
         doc.autoTable({
             head: [tableColumn], body: tableRows, startY: 50, theme: 'grid',
-            styles: { fontSize: 7, cellPadding: 5, textColor: [40, 40, 40], font: 'helvetica' }, // Added cellPadding: 5
-            // Ensure headers are vertically middle-aligned so the orange background looks clean
+            styles: { fontSize: 7, cellPadding: 5, textColor: [40, 40, 40], font: 'helvetica' }, 
             headStyles: { fillColor: [242, 101, 34], textColor: [255,255,255], fontStyle: 'bold', halign: 'center', valign: 'middle' },
             alternateRowStyles: { fillColor: [249, 250, 251] }, margin: { top: 40, left: 20, right: 20 },
             didParseCell: function(data) {
+                // Style Pending Amount column
                 if (data.section === 'body' && activeCols[data.column.index].id === 'pending_amount') {
-                    let val = parseFloat(data.cell.raw);
+                    let rawVal = data.cell.raw;
+                    if (typeof rawVal === 'string') rawVal = rawVal.replace('Rs.', '');
+                    let val = parseFloat(rawVal);
                     if (val > 0) { data.cell.styles.textColor = [211, 47, 47]; data.cell.styles.fontStyle = 'bold'; }
                     if (val < 0) { data.cell.styles.textColor = [46, 125, 50]; data.cell.styles.fontStyle = 'bold'; }
+                }
+
+                // If this is the Total Summary Row, highlight it
+                if (data.section === 'body' && includeTotals && data.row.index === tableRows.length - 1) {
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fillColor = [255, 245, 235]; // Extremely light saffron tint
+                    data.cell.styles.textColor = [242, 101, 34]; // Saffron orange text
                 }
             }
         });
